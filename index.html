@@ -313,23 +313,25 @@ tbody tr:hover td{background:var(--bg2)}
   <small>dangling 차단 · 생략 · struct 라이프타임 · 'static</small></a>
 </div>
 
-<div class="sb-nav-group" data-nav="tab-template">
+<div class="sb-nav-group" <div class="sb-nav-group" data-nav="tab-template">
 <a href="#s_template" class="sb-a">제네릭 · 템플릿
   <small>Java · C++17 · Rust 비교 · Type Erasure · Monomorphization</small></a>
-<a href="#s_template" class="sb-a">① 왜 필요한가
+<a href="#s_t_why" class="sb-a">① 왜 필요한가
   <small>타입별 중복 코드 문제</small></a>
-<a href="#s_template" class="sb-a">② Box&lt;T&gt; 핵심 차이
+<a href="#s_t_box" class="sb-a">② Box&lt;T&gt; 핵심 차이
   <small>Template Instantiation · Type Erasure</small></a>
-<a href="#s_template" class="sb-a">③ 함수 템플릿
+<a href="#s_t_func" class="sb-a">③ 함수 템플릿
   <small>제네릭 메서드 비교</small></a>
-<a href="#s_template" class="sb-a">④ 타입 제한
+<a href="#s_t_bound" class="sb-a">④ 타입 제한
   <small>static_assert · extends · trait bound</small></a>
-<a href="#s_template" class="sb-a">⑤ Primitive · 메모리
+<a href="#s_t_prim" class="sb-a">⑤ Primitive · 메모리
   <small>Boxing 비용 · 스택/힙 구조</small></a>
-<a href="#s_template" class="sb-a">⑦ Stack&lt;T&gt; 실전
+<a href="#s_t_runtime" class="sb-a">⑥ 런타임 타입 정보
+  <small>typeid · TypeId · Type Erasure</small></a>
+<a href="#s_t_stack" class="sb-a">⑦ Stack&lt;T&gt; 실전
   <small>완전 구현 비교</small></a>
-<a href="#s_template" class="sb-a">⑧ Rust 정적 vs 동적
-  <small>Fat Pointer · &amp;dyn</small></a>
+<a href="#s_t_dyn" class="sb-a">⑧ Rust 정적 vs 동적
+  <small>Fat Pointer · &dyn</small></a>
 </div>
 
 <div class="sb-nav-group" data-nav="tab-dispatch">
@@ -3526,7 +3528,7 @@ GC 없이 dangling pointer를 원천 차단합니다.
 <section id="s_template">
 <div class="sec-header"><span class="sec-num">⑮</span><h2>제네릭 · 템플릿 — Java · C++ · Rust 비교</h2></div>
 <p class="srcs">C++17 기준 · Java 21 기준 · Rust 1.82 기준 — Template Instantiation / Type Erasure / Monomorphization 완전 비교</p>
-<h3><span class="sec-num">①</span> 왜 제네릭/템플릿이 필요한가</h3>
+<section id="s_t_why"></section><h3><span class="sec-num">①</span> 왜 제네릭/템플릿이 필요한가</h3>
 <p>타입마다 같은 로직을 반복하는 문제를 해결하기 위해 등장했다. 세 언어 모두 <code>&lt;T&gt;</code> 문법을 사용하지만 컴파일 타임 처리 방식이 근본적으로 다르다.</p>
 <div class="g2"><div><div class="eb"><div class="et"><span class="el">☕ Java</span><button class="ec" onclick="cp('t_why_j')">복사</button><button class="run-btn" onclick="runCode('t_why_j','java')">▷ 실행</button></div><pre class="vp" id="t_why_j"><span class="ln"> 1</span><span class="kw">class</span> <span class="tp">PrintInt</span> {
 <span class="ln"> 2</span>    <span class="kw">static</span> <span class="kw">void</span> <span class="fn">print</span>(<span class="kw">int</span> v) {
@@ -3588,7 +3590,7 @@ GC 없이 dangling pointer를 원천 차단합니다.
 <span class="ln">16</span>    <span class="fn">print_any</span>(<span class="nm">3.14f64</span>);
 <span class="ln">17</span>}
 </pre><div class="run-output" id="out_t_why_r"></div></div>
-<h3><span class="sec-num">②</span> Box&lt;T&gt; — Template Instantiation vs Type Erasure vs Monomorphization</h3>
+<section id="s_t_box"></section><h3><span class="sec-num">②</span> Box&lt;T&gt; — Template Instantiation vs Type Erasure vs Monomorphization</h3>
 <svg viewBox="0 0 820 1820" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;display:block;margin:14px 0;border-radius:10px"><rect width="820" height="1820" fill="var(--bg1)" rx="10"/><defs>
 <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
   <polygon points="0 0,10 3.5,0 7" fill="var(--ac)"/>
@@ -3668,7 +3670,7 @@ GC 없이 dangling pointer를 원천 차단합니다.
 <div class="note info"><div class="note-title">💡 핵심 차이</div><div class="note-body">C++/Rust → 타입별 독립 코드 생성 (바이너리 크기 증가, 런타임 오버헤드 없음)<br>Java → 하나의 클래스로 처리 (바이너리 크기 불변, boxing/casting 비용 발생)</div></div>
 <div class="note info"><div class="note-title">💡 Java Box&lt;T&gt; 동작 원리 — 5단계</div><div class="note-body"><b>① 소스</b>: class Box&lt;T&gt; { T value; } → T = 타입 파라미터 (컴파일 타임 체크용)<br><b>② 컴파일</b>: javac가 T를 소거 → Box { Object value; } 로 변환 (Type Erasure)<br><b>③ JVM Method Area</b>: Box.push(Object), Box.pop() 코드 딱 1개씩만 존재<br>&nbsp;&nbsp;&nbsp;&nbsp;Box&lt;Integer&gt;용 push() → 없음 &nbsp;&nbsp; Box&lt;String&gt;용 push() → 없음<br><b>④ 런타임 new</b>: Box&lt;Integer&gt; a = new Box&lt;&gt;(42) → 힙에 Box 객체 #1 생성 { value: Object }<br>&nbsp;&nbsp;&nbsp;&nbsp;공장(클래스 코드) 1개, 상자(객체)는 new 할 때마다 생성<br><b>⑤ get() 호출</b>: Object 반환 → javac가 자동으로 (Integer) 캐스팅 삽입<br>&nbsp;&nbsp;&nbsp;&nbsp;잘못된 타입이면 ClassCastException 런타임 에러 발생<br><br><b>핵심</b>: T는 컴파일 타임 타입 체크 도구. 런타임에는 T 정보가 존재하지 않음</div></div>
 <div class="note info"><div class="note-title">💡 JVM 내부 — 코드 1개, 객체는 여러 개</div><div class="note-body">Stack&lt;Integer&gt; s1 = new Stack&lt;&gt;();&nbsp;&nbsp;Stack&lt;String&gt; s2 = new Stack&lt;&gt;();<br><br><b>JVM Method Area (공장 — 코드 영역):</b><br>&nbsp;&nbsp;Stack.push(Object) ← 딱 하나만 존재 &nbsp;&nbsp; push(Integer) → 없음<br>&nbsp;&nbsp;Stack.pop() &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 딱 하나만 존재 &nbsp;&nbsp; push(String) → 없음<br><br><b>힙 (Heap — 상자 영역):</b><br>&nbsp;&nbsp;s1 → Stack 객체 #1 { value: Object } &nbsp;&nbsp; s2 → Stack 객체 #2 { value: Object }<br><br><b>결론</b>: 코드(공장) 1개, 객체(상자) 2개 → Java Type Erasure의 핵심</div></div>
-<h3><span class="sec-num">③</span> 함수 템플릿 · 제네릭 메서드</h3>
+<section id="s_t_func"></section><h3><span class="sec-num">③</span> 함수 템플릿 · 제네릭 메서드</h3>
 <p>함수/메서드에도 타입 파라미터를 적용할 수 있다. Java는 객체에 <code>&gt;</code> 연산자를 사용할 수 없어 <code>Comparable</code> 제약이 필요하다. Rust는 <code>PartialOrd</code> trait bound로 명시한다.</p>
 <div class="g2"><div><div class="eb"><div class="et"><span class="el">☕ Java</span><button class="ec" onclick="cp('t_func_j')">복사</button><button class="run-btn" onclick="runCode('t_func_j','java')">▷ 실행</button></div><pre class="vp" id="t_func_j"><span class="ln"> 1</span><span class="kw">class</span> <span class="tp">Util</span> {
 <span class="ln"> 2</span>    <span class="cm">// Generic method: &lt;T extends Comparable&lt;T&gt;&gt;</span>
@@ -3731,7 +3733,7 @@ GC 없이 dangling pointer를 원천 차단합니다.
 <span class="ln">16</span>    <span class="cm">// Zero runtime overhead</span>
 <span class="ln">17</span>}
 </pre><div class="run-output" id="out_t_func_r"></div></div>
-<h3><span class="sec-num">④</span> 타입 제한 — C++17 static_assert · Java extends · Rust trait bound</h3>
+<section id="s_t_bound"></section><h3><span class="sec-num">④</span> 타입 제한 — C++17 static_assert · Java extends · Rust trait bound</h3>
 <svg viewBox="0 0 820 1814" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;display:block;margin:14px 0;border-radius:10px"><rect width="820" height="1814" fill="var(--bg1)" rx="10"/><defs>
 <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
   <polygon points="0 0,10 3.5,0 7" fill="var(--ac)"/>
@@ -3820,7 +3822,7 @@ GC 없이 dangling pointer를 원천 차단합니다.
 <span class="ln">23</span>    <span class="cm">// Constraint checked at compile time</span>
 <span class="ln">24</span>}
 </pre><div class="run-output" id="out_t_bound_r"></div></div>
-<h3><span class="sec-num">⑤</span> Primitive 타입 처리 · 메모리 구조</h3>
+<section id="s_t_prim"></section><h3><span class="sec-num">⑤</span> Primitive 타입 처리 · 메모리 구조</h3>
 <svg viewBox="0 0 820 1554" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;display:block;margin:14px 0;border-radius:10px"><rect width="820" height="1554" fill="var(--bg1)" rx="10"/><defs>
 <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
   <polygon points="0 0,10 3.5,0 7" fill="var(--ac)"/>
@@ -3920,7 +3922,7 @@ GC 없이 dangling pointer를 원천 차단합니다.
 <span class="ln">25</span>    <span class="cm">// No boxing, values in heap buffer directly</span>
 <span class="ln">26</span>}
 </pre><div class="run-output" id="out_t_prim_r"></div></div>
-<h3><span class="sec-num">⑥</span> 런타임 타입 정보</h3>
+<section id="s_t_runtime"></section><h3><span class="sec-num">⑥</span> 런타임 타입 정보</h3>
 <svg viewBox="0 0 820 802" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;display:block;margin:14px 0;border-radius:10px"><rect width="820" height="802" fill="var(--bg1)" rx="10"/><defs>
 <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
   <polygon points="0 0,10 3.5,0 7" fill="var(--ac)"/>
@@ -3989,7 +3991,7 @@ GC 없이 dangling pointer를 원천 차단합니다.
 <span class="ln">15</span>}
 </pre><div class="run-output" id="out_t_runtime_r"></div></div>
 <div class="note info"><div class="note-title">💡 pop() 자동 캐스팅 — 왜 ClassCastException이 발생하나</div><div class="note-body"><b>개발자 코드:</b> Integer x = s1.pop();<br><b>javac 실제 변환:</b> Integer x = (Integer) s1.pop(); &nbsp; ← 캐스팅 자동 삽입<br><br><b>정상 동작:</b> s1에 Integer를 push했다면 (Integer) 캐스팅 성공<br><b>런타임 에러:</b> s1에 String을 push했는데 Integer로 꺼내려 하면<br>&nbsp;&nbsp;→ ClassCastException: String cannot be cast to Integer<br><br>컴파일 타임에 타입 불일치를 잡아서 런타임 에러를 방지하는 것이 Java 제네릭의 핵심 목적.</div></div>
-<h3><span class="sec-num">⑦</span> 실전 — Stack&lt;T&gt; 완전 구현</h3>
+<section id="s_t_stack"></section><h3><span class="sec-num">⑦</span> 실전 — Stack&lt;T&gt; 완전 구현</h3>
 <p>앞에서 배운 개념을 모두 적용한 완전한 Stack 구현. C++는 <code>std::move</code>로 불필요한 복사를 제거. Rust는 <code>pop()</code>이 <code>Option&lt;T&gt;</code>를 반환해 빈 스택 접근을 컴파일 타임에 강제 처리한다.</p>
 <div class="g2"><div><div class="eb"><div class="et"><span class="el">☕ Java</span><button class="ec" onclick="cp('t_stack_j')">복사</button><button class="run-btn" onclick="runCode('t_stack_j','java')">▷ 실행</button></div><pre class="vp" id="t_stack_j"><span class="ln"> 1</span><span class="kw">import</span> java.util.<span class="tp">ArrayList</span>;
 <span class="ln"> 2</span><span class="kw">import</span> java.util.<span class="tp">List</span>;
@@ -4097,7 +4099,7 @@ GC 없이 dangling pointer를 원천 차단합니다.
 <span class="ln">32</span>    <span class="fn">println!</span>(<span class="st">&quot;{}&quot;</span>, s2.<span class="fn">pop</span>().<span class="fn">unwrap</span>());  <span class="cm">// b</span>
 <span class="ln">33</span>}
 </pre><div class="run-output" id="out_t_stack_r"></div></div>
-<h3><span class="sec-num">⑧</span> Rust — 정적 디스패치 vs 동적 디스패치 (&amp;dyn · Fat Pointer)</h3>
+<section id="s_t_dyn"></section><h3><span class="sec-num">⑧</span> Rust — 정적 디스패치 vs 동적 디스패치 (&amp;dyn · Fat Pointer)</h3>
 <svg viewBox="0 0 820 1888" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;display:block;margin:14px 0;border-radius:10px"><rect width="820" height="1888" fill="var(--bg1)" rx="10"/><defs>
 <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
   <polygon points="0 0,10 3.5,0 7" fill="var(--ac)"/>
