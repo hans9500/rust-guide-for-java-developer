@@ -390,6 +390,15 @@ tbody tr:hover td{background:var(--bg2)}
 <tr><td>⑦ 컬렉션 · 함수형</td><td>Vec · HashMap · Iterator 체인</td><td>ArrayList, HashMap, Stream</td></tr>
 <tr><td>⑧ 제네릭 · trait bound</td><td>단형화 vs 타입 소거 · struct 메서드</td><td>&lt;T extends Sound&gt;</td></tr>
 <tr><td>⑨ 라이프타임</td><td>참조 유효 범위 · dangling 차단 · 생략 규칙</td><td>GC (개념 없음)</td></tr>
+<tr><td rowspan="8"><strong>제네릭 · 템플릿</strong></td>
+    <td>① 왜 필요한가</td><td>타입별 중복 코드 문제 · 세 언어 비교</td><td>없음 (타입마다 클래스)</td></tr>
+<tr><td>② Box&lt;T&gt; 핵심 차이</td><td>Template Instantiation · Type Erasure · Monomorphization</td><td>제네릭 타입 소거</td></tr>
+<tr><td>③ 함수 템플릿</td><td>제네릭 메서드 · static_assert · trait bound</td><td>&lt;T&gt; 제네릭 메서드</td></tr>
+<tr><td>④ 타입 제한</td><td>static_assert · extends · trait bound</td><td>T extends Number</td></tr>
+<tr><td>⑤ Primitive · 메모리</td><td>Boxing 비용 · 스택/힙 구조 비교</td><td>Integer Autoboxing</td></tr>
+<tr><td>⑥ 런타임 타입 정보</td><td>typeid · TypeId · Type Erasure</td><td>getClass() · 리플렉션</td></tr>
+<tr><td>⑦ Stack&lt;T&gt; 실전</td><td>완전 구현 · Java/C++/Rust 비교</td><td>Stack&lt;T&gt; 구현</td></tr>
+<tr><td>⑧ 정적 vs 동적</td><td>Fat Pointer · &amp;dyn · vtable</td><td>인터페이스 동적 디스패치</td></tr>
 <tr><td rowspan="5"><strong>trait · 디스패치</strong></td>
     <td>상속 없는 Rust</td><td>컴포지션 · trait 기본 구현 · 4개 언어 비교</td><td>extends, implements</td></tr>
 <tr><td>impl vs dyn</td><td>정적 vs 동적 디스패치 5가지 비교</td><td>인터페이스 다형성</td></tr>
@@ -427,8 +436,9 @@ tbody tr:hover td{background:var(--bg2)}
 <table>
 <thead><tr><th>경험</th><th>추천 순서</th></tr></thead>
 <tbody>
-<tr><td>Rust 처음</td><td>① → ② → ③ → ④ → ⑥ → ⑦ → 전체 예제</td></tr>
-<tr><td>소유권이 헷갈림</td><td>④ → ⑤ → ⑨ → trait 탭</td></tr>
+<tr><td>Rust 처음</td><td>기초 문법 ① → ② → ③ → ④ → ⑥ → ⑦ → 전체 예제</td></tr>
+<tr><td>소유권이 헷갈림</td><td>기초 문법 ④ → ⑤ → ⑨ → trait 탭</td></tr>
+<tr><td>제네릭/템플릿 비교</td><td>제네릭·템플릿 탭 ① → ② → ③ → ④ → ⑦</td></tr>
 <tr><td>trait/인터페이스 비교</td><td>trait·디스패치 탭 전체</td></tr>
 <tr><td>빠른 참조</td><td>레퍼런스 탭 — 용어 사전 · 핵심 정리</td></tr>
 </tbody>
