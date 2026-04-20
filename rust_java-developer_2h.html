@@ -124,42 +124,48 @@ strong{color:var(--tx1);font-weight:700}
 .run-btn:hover{background:#238636;color:#fff}
 .run-btn:disabled{opacity:.5;cursor:not-allowed}
 
-/* 핵심: 각 줄마다 자체 Grid, 모든 줄 단위 침범/오버플로우 차단 */
+/* VS Code 스타일: 가로 스크롤 + 고정 라인번호 */
 .vp{
   background:#1e1e1e;color:#d4d4d4;
   font-family:'Consolas','Courier New',monospace;font-size:13px;line-height:1.6;
   padding:12px 0;margin:0;
-  overflow:hidden;           /* 가로/세로 모든 오버플로우 차단 */
+  overflow-x:auto;         /* 전체 박스가 가로 스크롤 가능 */
+  overflow-y:hidden;
   max-width:100%;
+  position:relative;
 }
-/* 각 줄은 자체 Grid 컨테이너 */
+/* 스크롤바 스타일 (VS Code 느낌) */
+.vp::-webkit-scrollbar{height:10px}
+.vp::-webkit-scrollbar-track{background:#1e1e1e}
+.vp::-webkit-scrollbar-thumb{background:#424242;border-radius:5px}
+.vp::-webkit-scrollbar-thumb:hover{background:#555}
+/* 각 줄은 flex - 라인번호(고정) + 코드(자연스럽게 흐름) */
 .vp .code-row{
-  display:grid;
-  grid-template-columns:3em minmax(0, 1fr);  /* minmax(0)로 cell 압축 허용 */
-  gap:0 12px;
-  align-items:start;
-  padding:0 14px;
-  max-width:100%;
-}
-.vp .code-row > *{
-  min-width:0;               /* Grid 아이템 기본 min-width 제거 */
-  max-width:100%;            /* 절대 부모 초과 금지 */
+  display:flex;
+  align-items:flex-start;
+  padding:0;
+  min-width:max-content;   /* 가장 긴 줄 기준으로 컨테이너 너비 결정 */
 }
 .vp .ln{
-  color:#858585;user-select:none;text-align:right;
-  border-right:1px solid #474747;padding-right:8px;
+  flex:0 0 3em;            /* 고정 3em */
+  color:#858585;
+  user-select:none;
+  text-align:right;
+  border-right:1px solid #474747;
+  padding:0 8px 0 14px;
+  margin-right:12px;
   font-variant-numeric:tabular-nums;
-  overflow:hidden;           /* 라인번호 절대 넘침 불가 */
-  white-space:nowrap;        /* 라인번호 자체 줄바꿈 방지 */
+  white-space:nowrap;
+  position:sticky;         /* 스크롤해도 왼쪽에 고정! */
+  left:0;
+  background:#1e1e1e;
+  z-index:2;
+  box-sizing:border-box;
 }
 .vp .line{
-  display:block;             /* 완전한 블록 박스 */
-  white-space:pre-wrap;
-  word-break:break-all;      /* 공격적 줄바꿈: 단어 중간도 OK */
-  overflow-wrap:anywhere;    /* 모든 문자 경계에서 줄바꿈 가능 */
-  overflow:hidden;           /* cell 경계 넘침 방지 */
-  min-width:0;
-  max-width:100%;
+  flex:1 1 auto;
+  white-space:pre;         /* 줄바꿈 안 함, 원본 그대로 */
+  padding-right:14px;
 }
 .cm{color:#6a9955;font-style:italic}
 .kw{color:#569cd6}
