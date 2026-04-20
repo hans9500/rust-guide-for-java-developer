@@ -287,6 +287,11 @@ td.center{text-align:center}
   h2,h3,.part-h{page-break-after:avoid}
   .page-title{font-size:17pt}
 }
+
+/* 라이프타임 시나리오 SVG */
+.lifetime-svg-wrap{margin:14px 0;padding:12px;background:var(--bg1);border:1px solid var(--bd);border-radius:8px;overflow-x:auto}
+.lifetime-svg{display:block;max-width:100%;height:auto;margin:0 auto}
+.lifetime-svg text{font-family:'Consolas','Courier New',monospace}
 </style>
 </head>
 <body>
@@ -491,6 +496,37 @@ td.center{text-align:center}
     <span class="srcs-label">출처:</span>
     <a class="src" href="https://doc.rust-kr.org/ch01-02-hello-world.html" target="_blank">《Rust 프로그래밍 언어》 1.2절 「Hello, World!」</a>
     <a class="src" href="https://doc.rust-kr.org/ch03-03-how-functions-work.html" target="_blank">3.3절 「함수의 동작 원리」</a>
+  </div>
+
+  <div class="part-h" style="margin-top:28px">📖 이 가이드에서 사용하는 약어</div>
+  <table>
+    <thead>
+      <tr><th>약어</th><th>풀네임 (영문)</th><th>의미 / 설명</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>Rust</code></td><td>—</td><td>시스템 프로그래밍 언어 (Mozilla 출신, 메모리 안전성이 핵심)</td></tr>
+      <tr><td><code>GC</code></td><td>Garbage Collector</td><td>가비지 컬렉터 — Java의 자동 메모리 관리 시스템</td></tr>
+      <tr><td><code>JVM</code></td><td>Java Virtual Machine</td><td>자바 가상 머신 — Java 바이트코드 실행 환경</td></tr>
+      <tr><td><code>NPE</code></td><td>NullPointerException</td><td>널 포인터 예외 — Java에서 <code>null</code> 참조 접근 시</td></tr>
+      <tr><td><code>ADT</code></td><td>Algebraic Data Type</td><td>대수적 데이터 타입 — <code>enum</code>이 대표적</td></tr>
+      <tr><td><code>NLL</code></td><td>Non-Lexical Lifetimes</td><td>비렉시컬 수명 — 참조 수명을 실제 사용 범위로 정확히 추적 (Rust 2018+)</td></tr>
+      <tr><td><code>Rc</code></td><td>Reference Counted</td><td>참조 카운팅 스마트 포인터 (단일 스레드)</td></tr>
+      <tr><td><code>Arc</code></td><td>Atomic Reference Counted</td><td>원자적 참조 카운팅 (멀티 스레드 안전)</td></tr>
+      <tr><td><code>Vec</code></td><td>Vector</td><td>동적 배열 — Java의 <code>ArrayList</code>에 대응</td></tr>
+      <tr><td><code>mpsc</code></td><td>Multiple Producer, Single Consumer</td><td>다중 생산자 단일 소비자 — Rust 표준 채널</td></tr>
+      <tr><td><code>Fn / FnMut / FnOnce</code></td><td>(클로저 트레잇)</td><td>캡처 방식별 클로저 — 읽기 / 수정 / 소유권 이동</td></tr>
+      <tr><td><code>E0597</code>, <code>E0106</code>, <code>E0502</code> 등</td><td>(Rust Compiler Error Codes)</td><td>러스트 컴파일러 에러 식별 코드 (<a href="https://doc.rust-lang.org/error-index.html" target="_blank">공식 인덱스</a>)</td></tr>
+      <tr><td><code>UTF-8 / UTF-16</code></td><td>Unicode Transformation Format</td><td>유니코드 인코딩 방식 (Rust는 UTF-8, Java는 UTF-16)</td></tr>
+      <tr><td><code>TRPL</code></td><td>The Rust Programming Language</td><td>러스트 공식 교재 — <a href="https://doc.rust-kr.org/" target="_blank">한글판</a></td></tr>
+      <tr><td><code>REPL</code></td><td>Read-Eval-Print Loop</td><td>읽기-평가-출력 순환 — 대화형 실행 환경</td></tr>
+    </tbody>
+  </table>
+  <div class="note info">
+    <div class="note-title">💡 참고</div>
+    <div class="note-body">
+      이 가이드는 Wandbox의 <code>rust-1.82.0</code>과 <code>openjdk-22</code> 환경에서 실행됩니다.
+      모든 예제는 브라우저 상단 <span class="badge ok">▷ 실행</span> 버튼으로 바로 실행 가능합니다.
+    </div>
   </div>
 </section>
 <section id="s1">
@@ -2372,227 +2408,1809 @@ error[E0308]: mismatched types
 </section><section id="s6">
   <div class="sec-header"><h2>6. 라이프타임 (Lifetimes) ⭐</h2></div>
 
-  <p>라이프타임은 <strong>참조가 유효한 범위</strong>를 컴파일 시점에 추적하는 시스템입니다. Rust가 <strong>댕글링 참조(dangling reference)</strong>를 런타임이 아닌 <strong>컴파일 시점</strong>에 차단하는 방법입니다.</p>
+  <p>라이프타임은 <strong>참조가 유효한 범위</strong>를 컴파일 시점에 추적하는 시스템입니다. 이 섹션은 <strong>실제로 마주칠 수 있는 10가지 문제 상황과 해결 방법</strong>을 다룹니다.</p>
 
-  <div class="part-h">Part 1. 왜 라이프타임이 필요한가</div>
-  <p>C/C++에서 가장 흔한 버그 중 하나는 <strong>이미 해제된 메모리에 접근</strong>하는 것입니다. Rust는 이걸 컴파일러가 막습니다.</p>
-
-  <div class="note er">
-    <div class="note-title">❌ 댕글링 참조 시도 - 컴파일 에러</div>
+  <div class="note info">
+    <div class="note-title">💡 라이프타임의 핵심</div>
     <div class="note-body">
-      <div class="err-msg">fn main() {
-    let r;
-    {
-        let x = 5;
-        r = &x;     // x는 이 블록 끝에서 사라짐
-    }
-    println!("{r}");  // r이 죽은 x를 가리킴
-}
---------------------------------------
-error[E0597]: `x` does not live long enough
- --&gt; src/main.rs:5:13
-5 |         r = &x;
-  |             ^^ borrowed value does not live long enough
-6 |     }
-  |     - `x` dropped here while still borrowed</div>
+      <ul>
+        <li>라이프타임은 <strong>메모리를 바꾸지 않습니다</strong> — 컴파일러를 위한 검증 정보일 뿐</li>
+        <li><code>'a</code> 같은 표기는 "이들은 같은 수명을 공유한다"는 선언</li>
+        <li>각 문제 상황마다 그림 → 코드 → 에러 → 해결 그림 → 해결 코드 순으로 봅니다</li>
+      </ul>
     </div>
   </div>
 
-  <div class="ex-label concept">예제 6-2: 문제없는 참조</div>
-  <div class="single"><div class="eb">
+  <table>
+    <thead><tr><th>에러 코드</th><th>상황</th><th>해결 방법</th></tr></thead>
+    <tbody>
+      <tr><td><code>E0597</code></td><td>참조가 원본보다 오래 삼</td><td>스코프 조정</td></tr>
+      <tr><td><code>E0106</code></td><td>라이프타임 명시 누락</td><td><code>'a</code> 명시 or 소유값 반환</td></tr>
+      <tr><td><code>E0502</code></td><td>불변+가변 참조 공존</td><td>수명 분리</td></tr>
+      <tr><td><code>E0515</code></td><td>지역 변수 참조 반환</td><td>소유값 반환</td></tr>
+    </tbody>
+  </table>
+
+  <div class="part-h">시나리오 1. 댕글링 참조</div>
+
+  <h3>🔴 문제 상황</h3>
+  <p>내부 스코프의 값을 바깥에서 참조하려고 하면, 값은 drop되고 참조만 남습니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 240" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="240" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">문제: 내부 스코프의 x가 drop된 후 r 사용</text>
+<rect x="16" y="40" width="608" height="150" class="dg-box" rx="4"/>
+<text x="28" y="58" class="dg-label">main</text>
+<rect x="180" y="74" width="270" height="50" class="dg-box-inner" rx="3"/>
+<text x="192" y="90" class="dg-label-sm">{ 내부 스코프 }</text>
+<text x="205" y="113" class="dg-var">x</text>
+<line x1="225" y1="108" x2="430" y2="108" class="dg-life-ok"/>
+<circle cx="225" cy="108" r="4" class="dg-dot-ok"/>
+<circle cx="430" cy="108" r="5" class="dg-dot-end"/>
+<text x="440" y="112" class="dg-drop">drop!</text>
+<text x="32" y="160" class="dg-var">r</text>
+<line x1="55" y1="155" x2="320" y2="155" class="dg-life-ok"/>
+<circle cx="55" cy="155" r="4" class="dg-dot-ok"/>
+<line x1="320" y1="155" x2="610" y2="155" class="dg-life-bad"/>
+<circle cx="610" cy="155" r="4" class="dg-dot-ok"/>
+<text x="395" y="180" class="dg-drop">↑ dangling 구간</text>
+<text x="16" y="225" class="dg-err">E0597: `x` does not live long enough</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-1a: 문제 코드</div>
+  <div class="eb">
 <div class="et">
 <span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
-<button class="ec" onclick="cp('r_s6_2')">복사</button>
-<button class="run-btn" onclick="runCode('r_s6_2','rust')">▷ 실행</button>
+<button class="ec" onclick="cp('r_s6_1_bad')">복사</button>
+
 </div>
-<div class="vp" id="r_s6_2">
+<div class="vp" id="r_s6_1_bad">
 <div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
-<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> x = <span class="nm">5</span>;</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> r;</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">        <span class="kw">let</span> x = <span class="nm">5</span>;</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">        r = &amp;x;       <span class="cm">// ❌ x는 내부 스코프 끝에서 drop</span></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, r);  <span class="cm">// r이 죽은 x를 가리킴</span></span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_1_bad"></div>
+</div>
+  
+  <div class="note er">
+    <div class="note-title">❌ 컴파일러 에러</div>
+    <div class="note-body">
+      <div class="err-msg">error[E0597]: `x` does not live long enough
+ --&gt; 01_bad.rs:5:13
+  |
+4 |         let x = 5;
+  |             - binding `x` declared here
+5 |         r = &amp;x;       // ❌ x는 내부 스코프 끝에서 drop
+  |             ^^ borrowed value does not live long enough
+6 |     }
+  |     - `x` dropped here while still borrowed
+7 |     println!(&quot;{}&quot;, r);  // r이 죽은 x를 가리킴</div>
+    </div>
+  </div>
+
+  <h3>🟢 해결 방법</h3>
+  <p>원본 값을 참조와 같은 스코프 이상에 선언합니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 208" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="208" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">해결: x를 main 스코프에 선언</text>
+<rect x="16" y="40" width="608" height="110" class="dg-box" rx="4"/>
+<text x="28" y="58" class="dg-label">main (x와 r 같은 수명)</text>
+<text x="32" y="92" class="dg-var">x</text>
+<line x1="55" y1="87" x2="610" y2="87" class="dg-life-good"/>
+<circle cx="55" cy="87" r="4" class="dg-dot-good"/>
+<circle cx="610" cy="87" r="4" class="dg-dot-good"/>
+<text x="32" y="130" class="dg-var">r</text>
+<line x1="110" y1="125" x2="570" y2="125" class="dg-life-good"/>
+<circle cx="110" cy="125" r="4" class="dg-dot-good"/>
+<circle cx="570" cy="125" r="4" class="dg-dot-good"/>
+<text x="16" y="190" class="dg-ok">✓ r의 수명이 x 안에 완전히 포함됨</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-1b: 해결 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_1_good')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_1_good','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s6_1_good">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> x = <span class="nm">5</span>;        <span class="cm">// x를 main 스코프에 선언</span></span></div>
 <div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> r = &amp;x;</span></div>
-<div class="code-row"><span class="ln">4</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{r}&quot;</span>);    <span class="cm">// x가 r보다 오래 살음 → OK</span></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, r);  <span class="cm">// ✓ x가 살아있는 동안 r 사용</span></span></div>
 <div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
 </div>
-<div class="run-output" id="out_r_s6_2"></div>
-</div></div>
+<div class="run-output" id="out_r_s6_1_good"></div>
+</div>
 
-  <div class="part-h">Part 2. 라이프타임 명시</div>
-  <p>함수가 참조를 받고 반환할 때, 컴파일러는 <strong>반환된 참조가 어느 입력에서 왔는지</strong> 알아야 합니다. 애매할 때 <code>'a</code> 문법으로 명시합니다.</p>
+  <div class="part-h">시나리오 2. 지역 변수 참조 반환</div>
 
-  <div class="ex-label concept">예제 6-3: 제네릭 라이프타임</div>
-  <div class="single"><div class="eb">
+  <h3>🔴 문제 상황</h3>
+  <p>함수 내부에서 만든 값의 참조를 반환하면, 함수가 끝나면서 값이 drop됩니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 245" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="245" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">문제: 함수 내부 String의 참조 반환</text>
+<rect x="16" y="40" width="420" height="120" class="dg-box" rx="4"/>
+<text x="28" y="58" class="dg-label">fn dangle()</text>
+<rect x="40" y="75" width="200" height="45" class="dg-box-inner" rx="3"/>
+<text x="52" y="92" class="dg-label-sm">힙 데이터</text>
+<text x="52" y="112" class="dg-var">s: "hello"</text>
+<text x="40" y="148" class="dg-var">return &amp;s</text>
+<path d="M 130 146 L 130 132 L 145 132" stroke="#dc2626" stroke-width="2" fill="none" marker-end="url(#arr-bad2)"/>
+<text x="460" y="62" class="dg-label">호출자</text>
+<rect x="460" y="75" width="164" height="45" class="dg-box-inner" rx="3"/>
+<text x="472" y="92" class="dg-err">참조할 대상</text>
+<text x="472" y="108" class="dg-err">없음 (dangling)</text>
+<text x="230" y="148" class="dg-drop">← 함수 종료 시 s drop!</text>
+<defs><marker id="arr-bad2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/></marker></defs>
+<text x="16" y="200" class="dg-err">반환된 참조가 가리킬 데이터가 사라짐</text>
+<text x="16" y="230" class="dg-err">E0106: missing lifetime specifier</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-2a: 문제 코드</div>
+  <div class="eb">
 <div class="et">
 <span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
-<button class="ec" onclick="cp('r_s6_3')">복사</button>
-<button class="run-btn" onclick="runCode('r_s6_3','rust')">▷ 실행</button>
+<button class="ec" onclick="cp('r_s6_2_bad')">복사</button>
+
 </div>
-<div class="vp" id="r_s6_3">
-<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 두 참조 중 더 긴 문자열 반환</span></span></div>
+<div class="vp" id="r_s6_2_bad">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> dangle() -&gt; &amp;<span class="tp">String</span> {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> s = <span class="tp">String</span>::from(<span class="st">&quot;hello&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    &amp;s                    <span class="cm">// ❌ s는 함수 종료 시 drop</span></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> reference = dangle();</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, reference);</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_2_bad"></div>
+</div>
+  
+  <div class="note er">
+    <div class="note-title">❌ 컴파일러 에러</div>
+    <div class="note-body">
+      <div class="err-msg">error[E0106]: missing lifetime specifier
+ --&gt; 02_bad.rs:1:16
+  |
+1 | fn dangle() -&gt; &amp;String {
+  |                ^ expected named lifetime parameter
+  |
+  = help: this function&#x27;s return type contains a borrowed value, but there is no value for it to be borrowed from
+help: consider using the `&#x27;static` lifetime
+  |
+1 | fn dangle() -&gt; &amp;&#x27;static String {</div>
+    </div>
+  </div>
+
+  <h3>🟢 해결 방법</h3>
+  <p>참조 대신 소유값(String 등)을 반환해 소유권을 호출자에게 넘깁니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 215" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="215" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">해결: 참조 대신 소유값(String) 반환</text>
+<rect x="16" y="40" width="420" height="100" class="dg-box" rx="4"/>
+<text x="28" y="58" class="dg-label">fn no_dangle()</text>
+<rect x="40" y="75" width="200" height="45" class="dg-box-inner" rx="3"/>
+<text x="52" y="92" class="dg-label-sm">힙 데이터</text>
+<text x="52" y="112" class="dg-var">s: "hello"</text>
+<path d="M 240 97 L 460 97" stroke="#059669" stroke-width="2" marker-end="url(#arr-good2)"/>
+<text x="285" y="87" class="dg-ok">move (소유권 이동)</text>
+<text x="460" y="58" class="dg-label">호출자</text>
+<rect x="460" y="75" width="164" height="45" class="dg-box" style="stroke:#059669" rx="3"/>
+<text x="475" y="103" class="dg-var">owned</text>
+<defs><marker id="arr-good2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#059669"/></marker></defs>
+<text x="16" y="175" class="dg-ok">✓ 데이터가 호출자로 이동 — 안전</text>
+<text x="16" y="197" class="dg-label-sm">호출자가 drop 책임을 가짐</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-2b: 해결 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_2_good')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_2_good','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s6_2_good">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 해결: 참조 대신 소유값 반환</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> no_dangle() -&gt; <span class="tp">String</span> {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> s = <span class="tp">String</span>::from(<span class="st">&quot;hello&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    s                     <span class="cm">// ✓ 소유권을 호출자에게 이동</span></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> owned = no_dangle();</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, owned);</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_2_good"></div>
+</div>
+
+  <div class="part-h">시나리오 3. 라이프타임 명시 누락</div>
+
+  <h3>🔴 문제 상황</h3>
+  <p>여러 참조 중 어느 것에서 반환되는지 컴파일러가 모를 때 에러가 납니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 226" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="226" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">문제: 반환 참조의 수명이 불명확</text>
+<rect x="16" y="40" width="608" height="50" class="dg-box" rx="4"/>
+<text x="30" y="68" class="dg-var">fn longest(s1: &amp;str, s2: &amp;str) -&gt; &amp;str</text>
+<path d="M 194 74 Q 194 110 260 110" stroke="#dc2626" stroke-width="2" fill="none" stroke-dasharray="4 3"/>
+<path d="M 312 74 Q 312 110 380 110" stroke="#dc2626" stroke-width="2" fill="none" stroke-dasharray="4 3"/>
+<text x="270" y="115" class="dg-drop">???</text>
+<text x="390" y="115" class="dg-drop">???</text>
+<line x1="400" y1="74" x2="400" y2="140" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="410" y="145" class="dg-drop">반환은 s1? s2?</text>
+<text x="16" y="185" class="dg-err">컴파일러: "반환 참조가 어느 입력에서 오는지 알 수 없음"</text>
+<text x="16" y="208" class="dg-err">E0106: missing lifetime specifier</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-3a: 문제 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_3_bad')">복사</button>
+
+</div>
+<div class="vp" id="r_s6_3_bad">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// ❌ 라이프타임 명시 없음</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> longest(s1: &amp;<span class="tp">str</span>, s2: &amp;<span class="tp">str</span>) -&gt; &amp;<span class="tp">str</span> {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">if</span> s1.len() &gt; s2.len() { s1 } <span class="kw">else</span> { s2 }</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> s1 = <span class="tp">String</span>::from(<span class="st">&quot;long string&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> s2 = <span class="tp">String</span>::from(<span class="st">&quot;short&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, longest(&amp;s1, &amp;s2));</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_3_bad"></div>
+</div>
+  
+  <div class="note er">
+    <div class="note-title">❌ 컴파일러 에러</div>
+    <div class="note-body">
+      <div class="err-msg">error[E0106]: missing lifetime specifier
+ --&gt; 03_bad.rs:2:35
+  |
+2 | fn longest(s1: &amp;str, s2: &amp;str) -&gt; &amp;str {
+  |                ----      ----     ^ expected named lifetime parameter
+  |
+  = help: this function&#x27;s return type contains a borrowed value, but the signature does not say whether it is borrowed from `s1` or `s2`
+help: consider introducing a named lifetime parameter
+  |
+2 | fn longest&lt;&#x27;a&gt;(s1: &amp;&#x27;a str, s2: &amp;&#x27;a str) -&gt; &amp;&#x27;a str {</div>
+    </div>
+  </div>
+
+  <h3>🟢 해결 방법</h3>
+  <p><code>'a</code>로 두 입력과 반환이 같은 수명임을 명시합니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 208" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="208" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">해결: 'a로 두 입력과 반환을 같은 수명으로 연결</text>
+<rect x="16" y="40" width="608" height="50" class="dg-box" rx="4"/>
+<text x="30" y="68" class="dg-var">fn longest&lt;'a&gt;(s1: &amp;'a str, s2: &amp;'a str) -&gt; &amp;'a str</text>
+<path d="M 215 74 Q 215 105 310 105 Q 310 105 445 105 L 445 74" stroke="#059669" stroke-width="2" fill="none"/>
+<text x="265" y="125" class="dg-ok">세 위치가 같은 'a로 연결됨</text>
+<text x="16" y="165" class="dg-ok">✓ 반환 수명 = 두 입력 중 더 짧은 쪽의 수명</text>
+<text x="16" y="190" class="dg-label-sm">컴파일러가 수명 관계를 검증 가능</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-3b: 해결 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_3_good')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_3_good','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s6_3_good">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// ✓ &#x27;a로 라이프타임 명시</span></span></div>
 <div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> longest&lt;&#x27;a&gt;(s1: &amp;&#x27;a <span class="tp">str</span>, s2: &amp;&#x27;a <span class="tp">str</span>) -&gt; &amp;&#x27;a <span class="tp">str</span> {</span></div>
 <div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">if</span> s1.len() &gt; s2.len() { s1 } <span class="kw">else</span> { s2 }</span></div>
 <div class="code-row"><span class="ln">4</span><span class="line">}</span></div>
 <div class="code-row"><span class="ln">5</span><span class="line"></span></div>
 <div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">fn</span> main() {</span></div>
-<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> s1 = <span class="tp">String</span>::from(<span class="st">&quot;Rust Book&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> s2 = <span class="tp">String</span>::from(<span class="st">&quot;Go&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">let</span> result = longest(&amp;s1, &amp;s2);</span></div>
-<div class="code-row"><span class="ln">10</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;더 긴 것: {result}&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">11</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> s1 = <span class="tp">String</span>::from(<span class="st">&quot;long string&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> s2 = <span class="tp">String</span>::from(<span class="st">&quot;short&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, longest(&amp;s1, &amp;s2));</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
 </div>
-<div class="run-output" id="out_r_s6_3"></div>
-</div></div>
+<div class="run-output" id="out_r_s6_3_good"></div>
+</div>
 
-  <div class="note warn">
-    <div class="note-title">⚠️ 라이프타임 명시 없이는 - 컴파일 에러</div>
+  <div class="part-h">시나리오 4. 서로 다른 스코프의 참조</div>
+
+  <h3>🔴 문제 상황</h3>
+  <p><code>'a</code>로 묶인 두 참조가 서로 다른 스코프에 있으면, 짧은 쪽에 끌려갑니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 270" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="270" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">문제: result가 짧은 s2 수명에 묶임</text>
+<rect x="16" y="40" width="608" height="150" class="dg-box" rx="4"/>
+<text x="28" y="58" class="dg-label">main</text>
+<text x="32" y="90" class="dg-var">s1</text>
+<line x1="65" y1="85" x2="610" y2="85" class="dg-life-ok"/>
+<circle cx="65" cy="85" r="4" class="dg-dot-ok"/>
+<circle cx="610" cy="85" r="4" class="dg-dot-ok"/>
+<rect x="130" y="105" width="240" height="45" class="dg-box-inner" rx="3"/>
+<text x="145" y="122" class="dg-label-sm">{ 내부 스코프 }</text>
+<text x="145" y="142" class="dg-var">s2</text>
+<line x1="175" y1="138" x2="350" y2="138" class="dg-life-ok"/>
+<circle cx="175" cy="138" r="4" class="dg-dot-ok"/>
+<circle cx="350" cy="138" r="5" class="dg-dot-end"/>
+<text x="380" y="142" class="dg-drop">drop!</text>
+<text x="32" y="175" class="dg-var">result</text>
+<line x1="80" y1="170" x2="350" y2="170" class="dg-life-ok"/>
+<circle cx="80" cy="170" r="4" class="dg-dot-ok"/>
+<line x1="350" y1="170" x2="500" y2="170" class="dg-life-bad"/>
+<text x="380" y="185" class="dg-drop">↑ result가 s2에 묶임</text>
+<text x="16" y="240" class="dg-err">E0597: `s2` does not live long enough</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-4a: 문제 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_4_bad')">복사</button>
+
+</div>
+<div class="vp" id="r_s6_4_bad">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> longest&lt;&#x27;a&gt;(s1: &amp;&#x27;a <span class="tp">str</span>, s2: &amp;&#x27;a <span class="tp">str</span>) -&gt; &amp;&#x27;a <span class="tp">str</span> {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">if</span> s1.len() &gt; s2.len() { s1 } <span class="kw">else</span> { s2 }</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    <span class="kw">let</span> s1 = <span class="tp">String</span>::from(<span class="st">&quot;long string&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> result;</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">        <span class="kw">let</span> s2 = <span class="tp">String</span>::from(<span class="st">&quot;short&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">        result = longest(&amp;s1, &amp;s2);   <span class="cm">// ❌ result는 s2 수명에 묶임</span></span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">    }  <span class="cm">// s2 drop</span></span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, result);            <span class="cm">// s2가 죽었을 수 있음</span></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_4_bad"></div>
+</div>
+  
+  <div class="note er">
+    <div class="note-title">❌ 컴파일러 에러</div>
     <div class="note-body">
-      <div class="err-msg">fn longest(s1: &str, s2: &str) -&gt; &str { ... }
---------------------------------------
-error[E0106]: missing lifetime specifier
- --&gt; src/main.rs:2:35
-2 | fn longest(s1: &str, s2: &str) -&gt; &str {
-  |                ----      ----     ^ expected named lifetime parameter
-  |
-  = help: this function's return type contains a borrowed value, but the signature
-    does not say whether it is borrowed from `s1` or `s2`</div>
-      컴파일러가 "반환 참조가 s1에서 온 건지 s2에서 온 건지 알 수 없다"고 명시 요청하는 것입니다.
+      <div class="err-msg">error[E0597]: `s2` does not live long enough
+  --&gt; 04_bad.rs:10:31
+   |
+9  |         let s2 = String::from(&quot;short&quot;);
+   |             -- binding `s2` declared here
+10 |         result = longest(&amp;s1, &amp;s2);   // ❌ result는 s2 수명에 묶임
+   |                               ^^^ borrowed value does not live long enough
+11 |     }  // s2 drop
+   |     - `s2` dropped here while still borrowed
+12 |     println!(&quot;{}&quot;, result);            // s2가 죽었을 수 있음</div>
     </div>
   </div>
 
-  <div class="part-h">Part 3. 라이프타임 생략 규칙</div>
-  <p>사실 대부분은 <strong>명시 안 해도 컴파일러가 추론</strong>합니다. 다음 3가지 규칙이 있습니다:</p>
-
-  <table>
-    <thead><tr><th>규칙</th><th>설명</th></tr></thead>
-    <tbody>
-      <tr><td>규칙 1</td><td>각 입력 참조는 자체 라이프타임을 가짐 (<code>fn f(x: &'a T, y: &'b U)</code>)</td></tr>
-      <tr><td>규칙 2</td><td>입력 라이프타임이 1개면 모든 출력이 그걸 가짐</td></tr>
-      <tr><td>규칙 3</td><td><code>&amp;self</code>/<code>&amp;mut self</code>가 있으면 그 라이프타임이 모든 출력에 적용</td></tr>
-    </tbody>
-  </table>
-
-  <div class="ex-label concept">예제 6-5: 생략 가능 - 입력 참조 1개</div>
-  <div class="single"><div class="eb">
+  <h3>🟢 해결 방법</h3>
+  <p>두 참조를 같은 스코프에서 사용합니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 208" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="208" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">해결: s1과 s2를 같은 스코프에서 사용</text>
+<rect x="16" y="40" width="608" height="110" class="dg-box" rx="4"/>
+<text x="28" y="58" class="dg-label">main (s1, s2 같은 수명)</text>
+<text x="32" y="90" class="dg-var">s1</text>
+<line x1="65" y1="85" x2="610" y2="85" class="dg-life-good"/>
+<circle cx="65" cy="85" r="4" class="dg-dot-good"/>
+<circle cx="610" cy="85" r="4" class="dg-dot-good"/>
+<text x="32" y="115" class="dg-var">s2</text>
+<line x1="65" y1="110" x2="610" y2="110" class="dg-life-good"/>
+<circle cx="65" cy="110" r="4" class="dg-dot-good"/>
+<circle cx="610" cy="110" r="4" class="dg-dot-good"/>
+<text x="32" y="140" class="dg-var">result</text>
+<line x1="90" y1="135" x2="580" y2="135" class="dg-life-good"/>
+<circle cx="90" cy="135" r="4" class="dg-dot-good"/>
+<circle cx="580" cy="135" r="4" class="dg-dot-good"/>
+<text x="16" y="190" class="dg-ok">✓ 셋 다 같은 수명 범위 → result 어느 쪽이든 유효</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-4b: 해결 코드</div>
+  <div class="eb">
 <div class="et">
 <span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
-<button class="ec" onclick="cp('r_s6_5')">복사</button>
-<button class="run-btn" onclick="runCode('r_s6_5','rust')">▷ 실행</button>
+<button class="ec" onclick="cp('r_s6_4_good')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_4_good','rust')">▷ 실행</button>
 </div>
-<div class="vp" id="r_s6_5">
-<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 입력 참조 1개 → 출력도 같은 라이프타임 (명시 불필요)</span></span></div>
-<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> first_word(s: &amp;<span class="tp">str</span>) -&gt; &amp;<span class="tp">str</span> {</span></div>
-<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">match</span> s.find(&#x27; &#x27;) {</span></div>
-<div class="code-row"><span class="ln">4</span><span class="line">        Some(i) =&gt; &amp;s[..i],</span></div>
-<div class="code-row"><span class="ln">5</span><span class="line">        None =&gt; s,</span></div>
-<div class="code-row"><span class="ln">6</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">7</span><span class="line">}</span></div>
-<div class="code-row"><span class="ln">8</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">9</span><span class="line"><span class="kw">fn</span> main() {</span></div>
-<div class="code-row"><span class="ln">10</span><span class="line">    <span class="kw">let</span> book = <span class="tp">String</span>::from(<span class="st">&quot;Rust Book&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">11</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;첫 단어: {}&quot;</span>, first_word(&amp;book));</span></div>
-<div class="code-row"><span class="ln">12</span><span class="line">}</span></div>
+<div class="vp" id="r_s6_4_good">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> longest&lt;&#x27;a&gt;(s1: &amp;&#x27;a <span class="tp">str</span>, s2: &amp;&#x27;a <span class="tp">str</span>) -&gt; &amp;&#x27;a <span class="tp">str</span> {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">if</span> s1.len() &gt; s2.len() { s1 } <span class="kw">else</span> { s2 }</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    <span class="kw">let</span> s1 = <span class="tp">String</span>::from(<span class="st">&quot;long string&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> s2 = <span class="tp">String</span>::from(<span class="st">&quot;short&quot;</span>);        <span class="cm">// 같은 스코프로 이동</span></span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> result = longest(&amp;s1, &amp;s2);</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, result);                 <span class="cm">// ✓ 둘 다 살아있음</span></span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
 </div>
-<div class="run-output" id="out_r_s6_5"></div>
-</div></div>
+<div class="run-output" id="out_r_s6_4_good"></div>
+</div>
 
-  <div class="part-h">Part 4. 구조체의 라이프타임</div>
-  <p>구조체가 <strong>참조를 필드로 보관</strong>하면 라이프타임 명시가 필수입니다.</p>
+  <div class="part-h">시나리오 5. 'a 하나로 묶어 제약 과함</div>
 
-  <div class="ex-label concept">예제 6-6: 참조 필드 구조체</div>
-  <div class="single"><div class="eb">
+  <h3>🔴 문제 상황</h3>
+  <p>반환에 s1만 쓰는데도 s2도 <code>'a</code>로 묶여 불필요한 수명 제약이 생깁니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 275" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="275" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">문제: s1, s2가 같은 'a로 묶여 짧은 수명에 끌려감</text>
+<rect x="16" y="40" width="608" height="50" class="dg-box" rx="4"/>
+<text x="30" y="68" class="dg-var">fn first&lt;'a&gt;(s1: &amp;'a str, s2: &amp;'a str) -&gt; &amp;'a str</text>
+<path d="M 175 74 Q 175 96 275 96 Q 275 96 420 96 Q 420 96 420 74" stroke="#dc2626" stroke-width="2" fill="none"/>
+<text x="240" y="110" class="dg-drop">세 위치 모두 같은 'a</text>
+<rect x="16" y="118" width="608" height="105" class="dg-box" rx="4"/>
+<text x="28" y="136" class="dg-label">main</text>
+<text x="32" y="165" class="dg-var">s1</text>
+<line x1="65" y1="160" x2="610" y2="160" class="dg-life-ok"/>
+<circle cx="65" cy="160" r="4" class="dg-dot-ok"/>
+<circle cx="610" cy="160" r="4" class="dg-dot-ok"/>
+<rect x="140" y="175" width="200" height="30" class="dg-box-inner" rx="3"/>
+<text x="155" y="196" class="dg-var">s2</text>
+<line x1="185" y1="191" x2="325" y2="191" class="dg-life-ok"/>
+<circle cx="185" cy="191" r="4" class="dg-dot-ok"/>
+<circle cx="325" cy="191" r="4" class="dg-dot-end"/>
+<text x="350" y="196" class="dg-drop">← s2 drop!</text>
+<text x="16" y="260" class="dg-err">E0597: `s2` does not live long enough — result가 s2에 묶임</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-5a: 문제 코드</div>
+  <div class="eb">
 <div class="et">
 <span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
-<button class="ec" onclick="cp('r_s6_6')">복사</button>
-<button class="run-btn" onclick="runCode('r_s6_6','rust')">▷ 실행</button>
+<button class="ec" onclick="cp('r_s6_5_bad')">복사</button>
+
 </div>
-<div class="vp" id="r_s6_6">
-<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 구조체가 참조를 보관 → 라이프타임 명시 필수</span></span></div>
+<div class="vp" id="r_s6_5_bad">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 실제로는 s1만 반환 가능한데 s2도 &#x27;a로 묶음</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> first&lt;&#x27;a&gt;(s1: &amp;&#x27;a <span class="tp">str</span>, s2: &amp;&#x27;a <span class="tp">str</span>) -&gt; &amp;&#x27;a <span class="tp">str</span> {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;두 번째: {}&quot;</span>, s2);</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    s1                                <span class="cm">// 실제로 s1만 반환</span></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> s1 = <span class="tp">String</span>::from(<span class="st">&quot;long&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">let</span> result;</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">        <span class="kw">let</span> s2 = <span class="tp">String</span>::from(<span class="st">&quot;짧음&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">        result = first(&amp;s1, &amp;s2);     <span class="cm">// ❌ result가 s2 수명에 묶임</span></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">    }  <span class="cm">// s2 drop</span></span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, result);            <span class="cm">// 실제로는 s1만 참조하는데 에러</span></span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_5_bad"></div>
+</div>
+  
+  <div class="note er">
+    <div class="note-title">❌ 컴파일러 에러</div>
+    <div class="note-body">
+      <div class="err-msg">error[E0597]: `s2` does not live long enough
+  --&gt; 05_bad.rs:12:29
+   |
+11 |         let s2 = String::from(&quot;짧음&quot;);
+   |             -- binding `s2` declared here
+12 |         result = first(&amp;s1, &amp;s2);     // ❌ result가 s2 수명에 묶임
+   |                             ^^^ borrowed value does not live long enough
+13 |     }  // s2 drop
+   |     - `s2` dropped here while still borrowed
+14 |     println!(&quot;{}&quot;, result);            // 실제로는 s1만 참조하는데 에러</div>
+    </div>
+  </div>
+
+  <h3>🟢 해결 방법</h3>
+  <p><code>'a</code>, <code>'b</code>로 분리해 반환에 연결되는 수명만 제약합니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 283" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="283" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">해결: 'a, 'b 분리 — 반환에 연결된 수명만 제약</text>
+<rect x="16" y="40" width="608" height="50" class="dg-box" rx="4"/>
+<text x="30" y="68" class="dg-var">fn first&lt;'a, 'b&gt;(s1: &amp;'a str, s2: &amp;'b str) -&gt; &amp;'a str</text>
+<path d="M 196 74 Q 196 100 455 100 Q 455 100 455 74" stroke="#059669" stroke-width="2" fill="none"/>
+<text x="265" y="115" class="dg-ok">'a: s1 ↔ 반환  /  'b: s2 독립</text>
+<rect x="16" y="125" width="608" height="105" class="dg-box" rx="4"/>
+<text x="28" y="143" class="dg-label">main</text>
+<text x="32" y="172" class="dg-var">s1</text>
+<line x1="65" y1="167" x2="610" y2="167" class="dg-life-good"/>
+<circle cx="65" cy="167" r="4" class="dg-dot-good"/>
+<circle cx="610" cy="167" r="4" class="dg-dot-good"/>
+<rect x="140" y="182" width="200" height="30" class="dg-box-inner" rx="3"/>
+<text x="155" y="203" class="dg-var">s2</text>
+<line x1="185" y1="198" x2="325" y2="198" class="dg-life-ok"/>
+<circle cx="185" cy="198" r="4" class="dg-dot-ok"/>
+<circle cx="325" cy="198" r="4" class="dg-dot-end"/>
+<text x="350" y="203" class="dg-ok">s2 drop돼도 OK ✓</text>
+<text x="16" y="265" class="dg-ok">✓ result는 s1 수명 'a를 따라감 → 바깥까지 유효</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-5b: 해결 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_5_good')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_5_good','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s6_5_good">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// ✓ &#x27;a, &#x27;b 분리: 반환은 s1에만 연결</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> first&lt;&#x27;a, &#x27;b&gt;(s1: &amp;&#x27;a <span class="tp">str</span>, s2: &amp;&#x27;b <span class="tp">str</span>) -&gt; &amp;&#x27;a <span class="tp">str</span> {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;두 번째: {}&quot;</span>, s2);</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    s1</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> s1 = <span class="tp">String</span>::from(<span class="st">&quot;long&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">let</span> result;</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">        <span class="kw">let</span> s2 = <span class="tp">String</span>::from(<span class="st">&quot;짧음&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">        result = first(&amp;s1, &amp;s2);     <span class="cm">// ✓ result는 &#x27;a = s1 수명</span></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, result);            <span class="cm">// ✓ s2 drop 돼도 s1만 필요</span></span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_5_good"></div>
+</div>
+
+  <div class="part-h">시나리오 6. 구조체 참조 필드 라이프타임 누락</div>
+
+  <h3>🔴 문제 상황</h3>
+  <p>구조체에 참조 필드가 있으면 반드시 라이프타임을 명시해야 합니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-drop{fill:#f48771}
+</style>
+<rect width="640" height="220" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">문제: 구조체 참조 필드에 라이프타임 명시 없음</text>
+
+<!-- 구조체 박스 -->
+<rect x="60" y="50" width="280" height="90" class="dg-box" rx="4"/>
+<text x="76" y="74" class="dg-var">struct BookRef {</text>
+
+<!-- title: &str, 에서 &str 부분을 빨간색+굵게 -->
+<text x="96" y="103" class="dg-var">title: <tspan fill="#dc2626" font-weight="bold" text-decoration="underline">&amp;str</tspan>,</text>
+
+<text x="76" y="130" class="dg-var">}</text>
+
+<!-- &str에서 오른쪽으로 화살표 (y=97로 &str 중앙 가리키기) -->
+<path d="M 230 97 L 365 97" stroke="#dc2626" stroke-width="1.5" fill="none" marker-end="url(#arr-r6fix)"/>
+<text x="378" y="92" class="dg-drop">이 참조, 어느</text>
+<text x="378" y="106" class="dg-drop">수명인가?</text>
+
+<defs>
+<marker id="arr-r6fix" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+</marker>
+</defs>
+
+<text x="16" y="180" class="dg-err">컴파일러: 원본 데이터의 수명을 알 수 없음</text>
+<text x="16" y="203" class="dg-err">E0106: missing lifetime specifier</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-6a: 문제 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_6_bad')">복사</button>
+
+</div>
+<div class="vp" id="r_s6_6_bad">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// ❌ 라이프타임 명시 없이 참조 필드</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">struct</span> BookRef {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    title: &amp;<span class="tp">str</span>,</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> s = <span class="tp">String</span>::from(<span class="st">&quot;Rust Book&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> b = BookRef { title: &amp;s };</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, b.title);</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_6_bad"></div>
+</div>
+  
+  <div class="note er">
+    <div class="note-title">❌ 컴파일러 에러</div>
+    <div class="note-body">
+      <div class="err-msg">error[E0106]: missing lifetime specifier
+ --&gt; 06_bad.rs:3:12
+  |
+3 |     title: &amp;str,
+  |            ^ expected named lifetime parameter
+  |
+help: consider introducing a named lifetime parameter
+  |
+2 ~ struct BookRef&lt;&#x27;a&gt; {
+3 ~     title: &amp;&#x27;a str,</div>
+    </div>
+  </div>
+
+  <h3>🟢 해결 방법</h3>
+  <p>구조체에 <code>&lt;'a&gt;</code> 매개변수를 추가합니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 226" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+</style>
+<rect width="640" height="226" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">해결: 구조체에 &lt;'a&gt; 추가 — 같은 라이프타임으로 연결</text>
+
+<!-- 구조체 박스 -->
+<rect x="60" y="50" width="320" height="90" class="dg-box" rx="4"/>
+
+<!-- 'a 하이라이트 박스 1: struct BookRef<'a> 의 'a -->
+<rect x="215" y="58" width="22" height="20" fill="#059669" fill-opacity="0.18" stroke="#059669" stroke-width="1.5" rx="3"/>
+<text x="76" y="74" class="dg-var">struct BookRef&lt;<tspan fill="#059669" font-weight="bold">'a</tspan>&gt; {</text>
+
+<!-- 'a 하이라이트 박스 2: &'a str 의 'a -->
+<rect x="164" y="88" width="22" height="20" fill="#059669" fill-opacity="0.18" stroke="#059669" stroke-width="1.5" rx="3"/>
+<text x="96" y="103" class="dg-var">title: &amp;<tspan fill="#059669" font-weight="bold">'a</tspan> str,</text>
+
+<text x="76" y="130" class="dg-var">}</text>
+
+<!-- 두 'a를 연결하는 곡선 -->
+<path d="M 226 78 Q 250 83 250 90 Q 250 96 175 94 Q 175 91 175 88" stroke="#059669" stroke-width="2" fill="none"/>
+<text x="265" y="88" class="dg-ok">같은 'a로 연결됨</text>
+
+<text x="16" y="175" class="dg-ok">✓ 구조체와 필드의 수명이 같음 — 원본보다 오래 못 삼</text>
+<text x="16" y="200" class="dg-label-sm">컴파일러가 수명 관계 추적 가능</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-6b: 해결 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_6_good')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_6_good','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s6_6_good">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// ✓ 구조체에 &lt;&#x27;a&gt; 라이프타임 매개변수 추가</span></span></div>
 <div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">struct</span> BookRef&lt;&#x27;a&gt; {</span></div>
 <div class="code-row"><span class="ln">3</span><span class="line">    title: &amp;&#x27;a <span class="tp">str</span>,</span></div>
 <div class="code-row"><span class="ln">4</span><span class="line">}</span></div>
 <div class="code-row"><span class="ln">5</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">impl</span>&lt;&#x27;a&gt; BookRef&lt;&#x27;a&gt; {</span></div>
-<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">fn</span> show(&amp;<span class="kw">self</span>) {</span></div>
-<div class="code-row"><span class="ln">8</span><span class="line">        <span class="fn">println</span>!(<span class="st">&quot;📖 {}&quot;</span>, <span class="kw">self</span>.title);</span></div>
-<div class="code-row"><span class="ln">9</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> s = <span class="tp">String</span>::from(<span class="st">&quot;Rust Book&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> b = BookRef { title: &amp;s };</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, b.title);</span></div>
 <div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
-<div class="code-row"><span class="ln">11</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">12</span><span class="line"><span class="kw">fn</span> main() {</span></div>
-<div class="code-row"><span class="ln">13</span><span class="line">    <span class="kw">let</span> s = <span class="tp">String</span>::from(<span class="st">&quot;Rust Book&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">14</span><span class="line">    <span class="kw">let</span> br = BookRef { title: &amp;s };</span></div>
-<div class="code-row"><span class="ln">15</span><span class="line">    br.show();</span></div>
-<div class="code-row"><span class="ln">16</span><span class="line">}</span></div>
 </div>
-<div class="run-output" id="out_r_s6_6"></div>
-</div></div>
+<div class="run-output" id="out_r_s6_6_good"></div>
+</div>
 
-  <div class="part-h">Part 5. 'static 라이프타임</div>
-  <p><code>'static</code>은 <strong>프로그램 전체 수명</strong>을 의미합니다. 문자열 리터럴은 자동으로 <code>&amp;'static str</code>입니다 (실행 파일에 박혀 있음).</p>
+  <div class="part-h">시나리오 7. 구조체가 원본보다 오래 살려고 함</div>
 
-  <div class="ex-label concept">예제 6-7: 'static</div>
-  <div class="single"><div class="eb">
+  <h3>🔴 문제 상황</h3>
+  <p>참조 필드를 가진 구조체는 원본 값보다 오래 살 수 없습니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 245" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="245" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">문제: book_ref가 원본 s보다 오래 살려고 함</text>
+<rect x="16" y="40" width="608" height="155" class="dg-box" rx="4"/>
+<text x="28" y="58" class="dg-label">main</text>
+<rect x="130" y="75" width="320" height="45" class="dg-box-inner" rx="3"/>
+<text x="145" y="92" class="dg-label-sm">{ 내부 스코프 }</text>
+<text x="145" y="112" class="dg-var">s</text>
+<line x1="165" y1="108" x2="430" y2="108" class="dg-life-ok"/>
+<circle cx="165" cy="108" r="4" class="dg-dot-ok"/>
+<circle cx="430" cy="108" r="5" class="dg-dot-end"/>
+<text x="440" y="112" class="dg-drop">drop!</text>
+<text x="32" y="155" class="dg-var">book_ref</text>
+<line x1="110" y1="150" x2="400" y2="150" class="dg-life-ok"/>
+<circle cx="110" cy="150" r="4" class="dg-dot-ok"/>
+<line x1="400" y1="150" x2="610" y2="150" class="dg-life-bad"/>
+<text x="320" y="180" class="dg-drop">↑ book_ref.title이 drop된 s 가리킴</text>
+<text x="16" y="230" class="dg-err">E0597: `s` does not live long enough</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-7a: 문제 코드</div>
+  <div class="eb">
 <div class="et">
 <span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
-<button class="ec" onclick="cp('r_s6_7')">복사</button>
-<button class="run-btn" onclick="runCode('r_s6_7','rust')">▷ 실행</button>
+<button class="ec" onclick="cp('r_s6_7_bad')">복사</button>
+
 </div>
-<div class="vp" id="r_s6_7">
-<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 문자열 리터럴은 프로그램 전체 수명</span></span></div>
-<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> get_motto() -&gt; &amp;&#x27;static <span class="tp">str</span> {</span></div>
-<div class="code-row"><span class="ln">3</span><span class="line">    <span class="st">&quot;안전 · 동시성 · 속도&quot;</span></span></div>
+<div class="vp" id="r_s6_7_bad">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">struct</span> BookRef&lt;&#x27;a&gt; { title: &amp;&#x27;a <span class="tp">str</span> }</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> book_ref;</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">        <span class="kw">let</span> s = <span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">        book_ref = BookRef { title: &amp;s };   <span class="cm">// ❌</span></span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    }  <span class="cm">// s drop - book_ref.title이 죽은 s 가리킴</span></span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, book_ref.title);</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_7_bad"></div>
+</div>
+  
+  <div class="note er">
+    <div class="note-title">❌ 컴파일러 에러</div>
+    <div class="note-body">
+      <div class="err-msg">error[E0597]: `s` does not live long enough
+ --&gt; 07_bad.rs:7:37
+  |
+6 |         let s = String::from(&quot;Rust&quot;);
+  |             - binding `s` declared here
+7 |         book_ref = BookRef { title: &amp;s };   // ❌
+  |                                     ^^ borrowed value does not live long enough
+8 |     }  // s drop - book_ref.title이 죽은 s 가리킴
+  |     - `s` dropped here while still borrowed
+9 |     println!(&quot;{}&quot;, book_ref.title);</div>
+    </div>
+  </div>
+
+  <h3>🟢 해결 방법</h3>
+  <p>원본 값을 구조체와 같은 스코프 이상에 선언합니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 208" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="208" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">해결: 원본 s를 바깥 스코프에 선언</text>
+<rect x="16" y="40" width="608" height="115" class="dg-box" rx="4"/>
+<text x="28" y="58" class="dg-label">main (s, book_ref 같은 수명)</text>
+<text x="32" y="95" class="dg-var">s</text>
+<line x1="55" y1="90" x2="610" y2="90" class="dg-life-good"/>
+<circle cx="55" cy="90" r="4" class="dg-dot-good"/>
+<circle cx="610" cy="90" r="4" class="dg-dot-good"/>
+<text x="32" y="135" class="dg-var">book_ref</text>
+<line x1="110" y1="130" x2="580" y2="130" class="dg-life-good"/>
+<circle cx="110" cy="130" r="4" class="dg-dot-good"/>
+<circle cx="580" cy="130" r="4" class="dg-dot-good"/>
+<text x="16" y="190" class="dg-ok">✓ s가 book_ref 전체 수명 동안 살아있음</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-7b: 해결 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_7_good')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_7_good','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s6_7_good">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">struct</span> BookRef&lt;&#x27;a&gt; { title: &amp;&#x27;a <span class="tp">str</span> }</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> s = <span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>);           <span class="cm">// 원본을 바깥으로</span></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">let</span> book_ref = BookRef { title: &amp;s };</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, book_ref.title);          <span class="cm">// ✓ s와 book_ref 수명 일치</span></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_7_good"></div>
+</div>
+
+  <div class="part-h">시나리오 8. 불변 + 가변 참조 수명 충돌</div>
+
+  <h3>🔴 문제 상황</h3>
+  <p>불변 참조가 아직 쓰이는 중에 가변 참조를 만들면 안 됩니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 253" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="253" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">문제: r1(불변)이 살아있을 때 r2(가변) 생성</text>
+<line x1="40" y1="160" x2="620" y2="160" class="dg-axis"/>
+<text x="600" y="180" class="dg-label-sm">시간</text>
+<line x1="90" y1="150" x2="90" y2="170" class="dg-tick"/>
+<text x="60" y="195" class="dg-label-sm">let r1=&amp;s</text>
+<line x1="310" y1="150" x2="310" y2="170" class="dg-tick"/>
+<text x="270" y="195" class="dg-label-sm">let r2=&amp;mut s</text>
+<line x1="540" y1="150" x2="540" y2="170" class="dg-tick"/>
+<text x="490" y="195" class="dg-label-sm">println!(r1,r2)</text>
+<text x="24" y="70" class="dg-var">r1</text>
+<text x="24" y="85" class="dg-label-sm">(불변)</text>
+<line x1="90" y1="70" x2="540" y2="70" class="dg-life-ok"/>
+<circle cx="90" cy="70" r="4" class="dg-dot-ok"/>
+<circle cx="540" cy="70" r="4" class="dg-dot-ok"/>
+<text x="24" y="120" class="dg-var">r2</text>
+<text x="24" y="135" class="dg-label-sm">(가변)</text>
+<line x1="310" y1="120" x2="540" y2="120" class="dg-life-bad"/>
+<circle cx="310" cy="120" r="4" class="dg-dot-end"/>
+<circle cx="540" cy="120" r="4" class="dg-dot-ok"/>
+<rect x="310" y="55" width="230" height="85" fill="#dc2626" fill-opacity="0.12" rx="3"/>
+<text x="340" y="48" class="dg-drop">❌ 충돌: r1(불변) + r2(가변) 공존 불가</text>
+<text x="16" y="235" class="dg-err">E0502: cannot borrow `s` as mutable</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-8a: 문제 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_8_bad')">복사</button>
+
+</div>
+<div class="vp" id="r_s6_8_bad">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s = <span class="tp">String</span>::from(<span class="st">&quot;hello&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> r1 = &amp;s;              <span class="cm">// 불변 참조</span></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> r2 = &amp;<span class="kw">mut</span> s;          <span class="cm">// ❌ 불변 참조 r1이 아직 살아있는데 가변 참조 생성</span></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}, {}&quot;</span>, r1, r2);</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_8_bad"></div>
+</div>
+  
+  <div class="note er">
+    <div class="note-title">❌ 컴파일러 에러</div>
+    <div class="note-body">
+      <div class="err-msg">error[E0502]: cannot borrow `s` as mutable because it is also borrowed as immutable
+ --&gt; 08_bad.rs:4:14
+  |
+3 |     let r1 = &amp;s;              // 불변 참조
+  |              -- immutable borrow occurs here
+4 |     let r2 = &amp;mut s;          // ❌ 불변 참조 r1이 아직 살아있는데 가변 참조 생성
+  |              ^^^^^^ mutable borrow occurs here
+5 |     println!(&quot;{}, {}&quot;, r1, r2);
+  |                        -- immutable borrow later used here
+</div>
+    </div>
+  </div>
+
+  <h3>🟢 해결 방법</h3>
+  <p>불변 참조 사용이 끝난 후 가변 참조를 만듭니다 (NLL이 자동 처리).</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 253" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="253" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">해결: r1 사용 종료 후 r2 생성 (수명 분리)</text>
+<line x1="40" y1="160" x2="620" y2="160" class="dg-axis"/>
+<text x="600" y="180" class="dg-label-sm">시간</text>
+<line x1="90" y1="150" x2="90" y2="170" class="dg-tick"/>
+<text x="60" y="195" class="dg-label-sm">let r1</text>
+<line x1="260" y1="150" x2="260" y2="170" class="dg-tick"/>
+<text x="220" y="195" class="dg-label-sm">println!(r1)</text>
+<line x1="380" y1="150" x2="380" y2="170" class="dg-tick"/>
+<text x="340" y="195" class="dg-label-sm">let r2</text>
+<line x1="560" y1="150" x2="560" y2="170" class="dg-tick"/>
+<text x="515" y="195" class="dg-label-sm">println!(r2)</text>
+<text x="24" y="70" class="dg-var">r1</text>
+<text x="24" y="85" class="dg-label-sm">(불변)</text>
+<line x1="90" y1="70" x2="260" y2="70" class="dg-life-good"/>
+<circle cx="90" cy="70" r="4" class="dg-dot-good"/>
+<circle cx="260" cy="70" r="4" class="dg-dot-good"/>
+<text x="24" y="120" class="dg-var">r2</text>
+<text x="24" y="135" class="dg-label-sm">(가변)</text>
+<line x1="380" y1="120" x2="560" y2="120" class="dg-life-good"/>
+<circle cx="380" cy="120" r="4" class="dg-dot-good"/>
+<circle cx="560" cy="120" r="4" class="dg-dot-good"/>
+<line x1="260" y1="55" x2="260" y2="145" stroke="#059669" stroke-width="1" stroke-dasharray="3 3"/>
+<line x1="380" y1="55" x2="380" y2="145" stroke="#059669" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="275" y="48" class="dg-ok">수명 분리 (NLL)</text>
+<text x="16" y="235" class="dg-ok">✓ 불변 사용 완료 → 가변 참조 가능</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-8b: 해결 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_8_good')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_8_good','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s6_8_good">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s = <span class="tp">String</span>::from(<span class="st">&quot;hello&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> r1 = &amp;s;</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, r1);       <span class="cm">// r1 사용 끝 (수명 종료)</span></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    <span class="kw">let</span> r2 = &amp;<span class="kw">mut</span> s;          <span class="cm">// ✓ r1 수명 끝난 후 가변 참조 생성</span></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    r2.push_str(<span class="st">&quot; world&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, r2);</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_8_good"></div>
+</div>
+
+  <div class="part-h">시나리오 9. 벡터 참조 유지 중 벡터 수정</div>
+
+  <h3>🔴 문제 상황</h3>
+  <p><code>v.push()</code>는 재할당 가능성이 있어, 기존 참조를 무효화할 수 있습니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 245" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="245" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">문제: 벡터 참조 유지 중 push로 재할당 가능</text>
+<rect x="16" y="45" width="295" height="95" class="dg-box" rx="4"/>
+<text x="28" y="63" class="dg-label">이전 벡터 [1, 2, 3]</text>
+<rect x="40" y="75" width="40" height="30" class="dg-box-inner" rx="2"/>
+<text x="52" y="95" class="dg-var">1</text>
+<rect x="85" y="75" width="40" height="30" class="dg-box-inner" rx="2"/>
+<text x="97" y="95" class="dg-var">2</text>
+<rect x="130" y="75" width="40" height="30" class="dg-box-inner" rx="2"/>
+<text x="142" y="95" class="dg-var">3</text>
+<text x="40" y="127" class="dg-label-sm">first → &amp;v[0]</text>
+<path d="M 58 130 L 58 110" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arr-b9)"/>
+<rect x="330" y="45" width="295" height="95" class="dg-box" rx="4"/>
+<text x="342" y="63" class="dg-label">push 후 (재할당 가능)</text>
+<rect x="360" y="75" width="35" height="30" class="dg-box-inner" rx="2"/>
+<text x="370" y="95" class="dg-var">1</text>
+<rect x="400" y="75" width="35" height="30" class="dg-box-inner" rx="2"/>
+<text x="410" y="95" class="dg-var">2</text>
+<rect x="440" y="75" width="35" height="30" class="dg-box-inner" rx="2"/>
+<text x="450" y="95" class="dg-var">3</text>
+<rect x="480" y="75" width="35" height="30" class="dg-box-inner" rx="2"/>
+<text x="490" y="95" class="dg-var">4</text>
+<text x="530" y="95" class="dg-drop">(다른 주소)</text>
+<text x="342" y="127" class="dg-err">first → 해제된 메모리</text>
+<path d="M 160 110 Q 240 165 450 110" stroke="#dc2626" stroke-width="1.5" fill="none" stroke-dasharray="5 3" marker-end="url(#arr-bad9)"/>
+<defs>
+<marker id="arr-b9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/></marker>
+<marker id="arr-bad9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/></marker>
+</defs>
+<text x="16" y="185" class="dg-err">재할당 시 first는 해제된 메모리 가리킴</text>
+<text x="16" y="210" class="dg-err">E0502: cannot borrow `v` as mutable</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-9a: 문제 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_9_bad')">복사</button>
+
+</div>
+<div class="vp" id="r_s6_9_bad">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> v = <span class="fn">vec</span>![<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>];</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> first = &amp;v[<span class="nm">0</span>];        <span class="cm">// 첫 요소 참조</span></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    v.push(<span class="nm">4</span>);                <span class="cm">// ❌ 벡터 수정 - 재할당 시 first가 무효화될 수 있음</span></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, first);</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_9_bad"></div>
+</div>
+  
+  <div class="note er">
+    <div class="note-title">❌ 컴파일러 에러</div>
+    <div class="note-body">
+      <div class="err-msg">error[E0502]: cannot borrow `v` as mutable because it is also borrowed as immutable
+ --&gt; 09_bad.rs:4:5
+  |
+3 |     let first = &amp;v[0];        // 첫 요소 참조
+  |                  - immutable borrow occurs here
+4 |     v.push(4);                // ❌ 벡터 수정 - 재할당 시 first가 무효화될 수 있음
+  |     ^^^^^^^^^ mutable borrow occurs here
+5 |     println!(&quot;{}&quot;, first);
+  |                    ----- immutable borrow later used here
+</div>
+    </div>
+  </div>
+
+  <h3>🟢 해결 방법</h3>
+  <p>값을 복사(Copy 타입) 또는 clone한 후 벡터를 수정합니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 216" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="216" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">해결: 참조 대신 값 복사 (i32는 Copy)</text>
+<rect x="16" y="45" width="295" height="95" class="dg-box" rx="4"/>
+<text x="28" y="63" class="dg-label">벡터 [1, 2, 3, 4]</text>
+<rect x="40" y="75" width="35" height="30" class="dg-box-inner" rx="2"/>
+<text x="50" y="95" class="dg-var">1</text>
+<rect x="80" y="75" width="35" height="30" class="dg-box-inner" rx="2"/>
+<text x="90" y="95" class="dg-var">2</text>
+<rect x="120" y="75" width="35" height="30" class="dg-box-inner" rx="2"/>
+<text x="130" y="95" class="dg-var">3</text>
+<rect x="160" y="75" width="35" height="30" class="dg-box-inner" rx="2"/>
+<text x="170" y="95" class="dg-var">4</text>
+<text x="40" y="127" class="dg-label-sm">push 가능 ✓</text>
+<rect x="340" y="60" width="150" height="60" class="dg-box" style="stroke:#059669" rx="4"/>
+<text x="355" y="80" class="dg-label">first (독립)</text>
+<text x="355" y="105" class="dg-var">값 1 (복사본)</text>
+<text x="500" y="90" class="dg-ok">← v와 무관</text>
+<text x="16" y="175" class="dg-ok">✓ 참조가 없으므로 v 수정 자유</text>
+<text x="16" y="198" class="dg-label-sm">참조형(String 등)은 .clone() 사용</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-9b: 해결 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_9_good')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_9_good','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s6_9_good">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> v = <span class="fn">vec</span>![<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>];</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> first = v[<span class="nm">0</span>];         <span class="cm">// 값 복사 (i32는 Copy)</span></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    v.push(<span class="nm">4</span>);                <span class="cm">// ✓ 참조가 아니므로 벡터 수정 가능</span></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}, {:?}&quot;</span>, first, v);</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_9_good"></div>
+</div>
+
+  <div class="part-h">시나리오 10. 함수 반환값을 더 오래 쓰려 함</div>
+
+  <h3>🔴 문제 상황</h3>
+  <p>함수 내 지역 String의 참조를 반환하려는 시도입니다.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 233" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="233" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">문제: 함수 내 지역 String의 참조 반환</text>
+<rect x="16" y="40" width="420" height="95" class="dg-box" rx="4"/>
+<text x="28" y="58" class="dg-label">fn get_name()</text>
+<rect x="40" y="75" width="200" height="45" class="dg-box-inner" rx="3"/>
+<text x="52" y="92" class="dg-label-sm">힙 데이터</text>
+<text x="52" y="112" class="dg-var">name: "Rust"</text>
+<text x="250" y="100" class="dg-err">return &amp;name</text>
+<text x="460" y="58" class="dg-label">호출자</text>
+<rect x="460" y="75" width="164" height="45" class="dg-box-inner" rx="3"/>
+<text x="472" y="92" class="dg-err">참조할 대상</text>
+<text x="472" y="108" class="dg-err">없음 (dangling)</text>
+<text x="40" y="160" class="dg-drop">↓ 함수 종료 시 name drop!</text>
+<text x="16" y="195" class="dg-err">반환 참조 → 해제된 메모리</text>
+<text x="16" y="215" class="dg-err">E0106: missing lifetime specifier</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-10a: 문제 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_10_bad')">복사</button>
+
+</div>
+<div class="vp" id="r_s6_10_bad">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> get_name() -&gt; &amp;<span class="tp">str</span> {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> name = <span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    &amp;name                     <span class="cm">// ❌ 지역 변수 참조 반환</span></span></div>
 <div class="code-row"><span class="ln">4</span><span class="line">}</span></div>
 <div class="code-row"><span class="ln">5</span><span class="line"></span></div>
 <div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">fn</span> main() {</span></div>
-<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> motto: &amp;&#x27;static <span class="tp">str</span> = get_motto();</span></div>
-<div class="code-row"><span class="ln">8</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;Rust 모토: {motto}&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> name = get_name();</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, name);</span></div>
 <div class="code-row"><span class="ln">9</span><span class="line">}</span></div>
 </div>
-<div class="run-output" id="out_r_s6_7"></div>
-</div></div>
+<div class="run-output" id="out_r_s6_10_bad"></div>
+</div>
+  
+  <div class="note er">
+    <div class="note-title">❌ 컴파일러 에러</div>
+    <div class="note-body">
+      <div class="err-msg">error[E0106]: missing lifetime specifier
+ --&gt; 10_bad.rs:1:18
+  |
+1 | fn get_name() -&gt; &amp;str {
+  |                  ^ expected named lifetime parameter
+  |
+  = help: this function&#x27;s return type contains a borrowed value, but there is no value for it to be borrowed from
+help: consider using the `&#x27;static` lifetime
+  |
+1 | fn get_name() -&gt; &amp;&#x27;static str {</div>
+    </div>
+  </div>
 
-  <div class="part-h">Part 6. Book 참조 보관 (심화)</div>
-  <div class="ex-label deep">예제 6-8: 라이프타임 필드</div>
-  <div class="single"><div class="eb">
+  <h3>🟢 해결 방법</h3>
+  <p><code>String</code> 타입으로 반환 — 소유권 이동.</p>
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 210" xmlns="http://www.w3.org/2000/svg"><style>
+.dg-bg{fill:#ffffff}
+.dg-box{fill:#ffffff;stroke:#374151;stroke-width:2}
+.dg-box-inner{fill:#f9fafb;stroke:#6b7280;stroke-width:1.5;stroke-dasharray:6 3}
+.dg-title{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dg-label{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dg-label-sm{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dg-var{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dg-life-ok{stroke:#2563eb;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-life-bad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dg-life-good{stroke:#059669;stroke-width:3;fill:none;stroke-linecap:round}
+.dg-dot-ok{fill:#2563eb}
+.dg-dot-end{fill:#dc2626}
+.dg-dot-good{fill:#059669}
+.dg-err{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dg-ok{font:bold 12px 'Consolas',monospace;fill:#059669}
+.dg-drop{font:bold 11px 'Pretendard','Noto Sans KR',sans-serif;fill:#dc2626}
+.dg-axis{stroke:#9ca3af;stroke-width:1}
+.dg-tick{stroke:#6b7280;stroke-width:1}
+[data-theme=dark] .dg-bg{fill:#1e1e1e}
+[data-theme=dark] .dg-box{fill:#1e1e1e;stroke:#cccccc;stroke-width:2}
+[data-theme=dark] .dg-box-inner{fill:#252526;stroke:#858585;stroke-width:1.5;stroke-dasharray:6 3}
+[data-theme=dark] .dg-title{fill:#d4d4d4}
+[data-theme=dark] .dg-label{fill:#d4d4d4}
+[data-theme=dark] .dg-label-sm{fill:#cccccc}
+[data-theme=dark] .dg-var{fill:#9cdcfe}
+[data-theme=dark] .dg-life-ok{stroke:#569cd6}
+[data-theme=dark] .dg-life-bad{stroke:#f48771}
+[data-theme=dark] .dg-life-good{stroke:#4ec9b0}
+[data-theme=dark] .dg-dot-ok{fill:#569cd6}
+[data-theme=dark] .dg-dot-end{fill:#f48771}
+[data-theme=dark] .dg-dot-good{fill:#4ec9b0}
+[data-theme=dark] .dg-err{fill:#f48771}
+[data-theme=dark] .dg-ok{fill:#4ec9b0}
+[data-theme=dark] .dg-drop{fill:#f48771}
+[data-theme=dark] .dg-axis{stroke:#858585}
+[data-theme=dark] .dg-tick{stroke:#858585}
+</style><rect width="640" height="210" class="dg-bg"/>
+<text x="16" y="22" class="dg-title">해결: String(소유값) 반환 — 소유권 이동</text>
+<rect x="16" y="40" width="420" height="95" class="dg-box" rx="4"/>
+<text x="28" y="58" class="dg-label">fn get_name()</text>
+<rect x="40" y="75" width="200" height="45" class="dg-box-inner" rx="3"/>
+<text x="52" y="92" class="dg-label-sm">힙 데이터</text>
+<text x="52" y="112" class="dg-var">name: "Rust"</text>
+<path d="M 240 95 L 460 95" stroke="#059669" stroke-width="2" marker-end="url(#arr-good10)"/>
+<text x="290" y="87" class="dg-ok">move</text>
+<text x="460" y="58" class="dg-label">호출자</text>
+<rect x="460" y="75" width="164" height="45" class="dg-box" style="stroke:#059669" rx="3"/>
+<text x="475" y="103" class="dg-var">name (소유)</text>
+<defs><marker id="arr-good10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" fill="#059669"/></marker></defs>
+<text x="16" y="170" class="dg-ok">✓ 호출자가 소유 — 더 이상 참조 문제 없음</text>
+<text x="16" y="195" class="dg-label-sm">drop 책임도 호출자에게 이동</text>
+</svg>
+  </div>
+  <div class="ex-label concept">예제 6-10b: 해결 코드</div>
+  <div class="eb">
 <div class="et">
 <span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
-<button class="ec" onclick="cp('r_s6_8')">복사</button>
-<button class="run-btn" onclick="runCode('r_s6_8','rust')">▷ 실행</button>
+<button class="ec" onclick="cp('r_s6_10_good')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_10_good','rust')">▷ 실행</button>
 </div>
-<div class="vp" id="r_s6_8">
-<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// Book이 다른 데이터의 참조를 보관</span></span></div>
-<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">struct</span> Book&lt;&#x27;a&gt; {</span></div>
-<div class="code-row"><span class="ln">3</span><span class="line">    title: &amp;&#x27;a <span class="tp">str</span>,</span></div>
-<div class="code-row"><span class="ln">4</span><span class="line">    author: &amp;&#x27;a <span class="tp">str</span>,</span></div>
+<div class="vp" id="r_s6_10_good">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 해결: 소유값으로 반환</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> get_name() -&gt; <span class="tp">String</span> {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> name = <span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    name                      <span class="cm">// ✓ 소유권 이동</span></span></div>
 <div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
 <div class="code-row"><span class="ln">6</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">impl</span>&lt;&#x27;a&gt; Book&lt;&#x27;a&gt; {</span></div>
-<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">fn</span> info(&amp;<span class="kw">self</span>) -&gt; <span class="tp">String</span> {</span></div>
-<div class="code-row"><span class="ln">9</span><span class="line">        <span class="fn">format</span>!(<span class="st">&quot;{} by {}&quot;</span>, <span class="kw">self</span>.title, <span class="kw">self</span>.author)</span></div>
-<div class="code-row"><span class="ln">10</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">11</span><span class="line">}</span></div>
-<div class="code-row"><span class="ln">12</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">13</span><span class="line"><span class="kw">fn</span> main() {</span></div>
-<div class="code-row"><span class="ln">14</span><span class="line">    <span class="kw">let</span> t = <span class="tp">String</span>::from(<span class="st">&quot;Rust Book&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">15</span><span class="line">    <span class="kw">let</span> a = <span class="tp">String</span>::from(<span class="st">&quot;Steve Klabnik&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">16</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">17</span><span class="line">    <span class="kw">let</span> book = Book {</span></div>
-<div class="code-row"><span class="ln">18</span><span class="line">        title: &amp;t,</span></div>
-<div class="code-row"><span class="ln">19</span><span class="line">        author: &amp;a,</span></div>
-<div class="code-row"><span class="ln">20</span><span class="line">    };</span></div>
-<div class="code-row"><span class="ln">21</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">22</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, book.info());</span></div>
-<div class="code-row"><span class="ln">23</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> name = get_name();    <span class="cm">// name이 소유</span></span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, name);</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
 </div>
-<div class="run-output" id="out_r_s6_8"></div>
-</div></div>
+<div class="run-output" id="out_r_s6_10_good"></div>
+</div>
 
   <div class="note ok">
-    <div class="note-title">✅ 섹션 5 정리</div>
+    <div class="note-title">✅ 섹션 6 정리 — 해결 3단계</div>
     <div class="note-body">
-      <ul>
-        <li>라이프타임은 <strong>참조의 유효 범위</strong>를 추적</li>
-        <li>대부분은 <strong>생략 가능</strong> (컴파일러 자동 추론)</li>
-        <li>함수/구조체가 참조를 여럿 다룰 때 <code>'a</code>로 명시</li>
-        <li><code>'static</code>은 프로그램 전체 수명</li>
-      </ul>
+      <ol>
+        <li><strong>라이프타임 생략 규칙 적용되나?</strong> → 그냥 생략</li>
+        <li><strong>입력들이 같은 수명이어야 하나?</strong> → <code>'a</code> 하나로 묶기</li>
+        <li><strong>입력마다 독립적인가?</strong> → <code>'a</code>, <code>'b</code> 분리</li>
+      </ol>
+      <p style="margin-top:8px">그래도 해결 안 되면 <strong>참조 대신 소유값</strong> 사용을 고려하세요.</p>
     </div>
   </div>
 
