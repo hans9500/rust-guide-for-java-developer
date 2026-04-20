@@ -763,7 +763,7 @@ td.center{text-align:center}
     <div class="note-title">⚠️ char 크기 주의 - Java와 다름!</div>
     <div class="note-body">
       Java <code>char</code>는 <strong>2바이트 (UTF-16)</strong>, Rust <code>char</code>는 <strong>4바이트 (Unicode Scalar Value)</strong>입니다.
-      Rust <code>char</code>는 이모지 <code>'🦀'</code>도 단일 값으로 표현 가능합니다.
+      Rust <code>char</code>는 한글 <code>'한'</code>이나 이모지도 단일 값으로 표현 가능합니다.
     </div>
   </div>
 
@@ -874,6 +874,56 @@ td.center{text-align:center}
 </div>
 <div class="run-output" id="out_r_s2_1"></div>
 </div></div></div>
+
+  <h3>문장으로 쓸 때 - 자유로운 브랜치</h3>
+  <p><code>if</code>를 <strong>문장</strong>으로 쓸 때는 (값을 반환하지 않고 단순 실행)
+  <code>else</code>를 생략할 수 있고, 각 브랜치 안에 어떤 문장이 와도 상관없습니다.
+  서로 다른 내용이어도 OK.</p>
+
+  <div class="ex-label concept">예제 2-1b: 문장 if - 자유로움</div>
+  <div class="single"><div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s2_1b')">복사</button>
+<button class="run-btn" onclick="runCode('r_s2_1b','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s2_1b">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> x = <span class="nm">10</span>;</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    <span class="cm">// <span class="nm">1</span>) <span class="kw">else</span> 생략 가능 (문장이니까)</span></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">if</span> x &gt; <span class="nm">0</span> {</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">        <span class="fn">println</span>!(<span class="st">&quot;양수&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="cm">// <span class="nm">2</span>) 각 브랜치 내용 자유 - 서로 달라도 OK</span></span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="kw">if</span> x &gt; <span class="nm">5</span> {</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">        <span class="fn">println</span>!(<span class="st">&quot;큼&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">        <span class="kw">let</span> _y = x * <span class="nm">2</span>;          <span class="cm">// 변수 선언</span></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">    } <span class="kw">else</span> {</span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">        <span class="kw">let</span> msg = <span class="st">&quot;작음&quot;</span>;         <span class="cm">// 다른 종류의 문장</span></span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">        <span class="fn">println</span>!(<span class="st">&quot;{msg}&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">16</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">17</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s2_1b"></div>
+</div></div>
+
+  <table>
+    <thead><tr><th>사용 방식</th><th>else 필수?</th><th>브랜치 타입 통일?</th><th>브랜치 내용</th></tr></thead>
+    <tbody>
+      <tr><td>문장 (<code>if { ... }</code>)</td><td class="center"><span class="badge no">❌</span></td><td class="center"><span class="badge no">❌</span></td><td>자유</td></tr>
+      <tr><td>표현식 (<code>let x = if ...</code>)</td><td class="center"><span class="badge ok">✅</span></td><td class="center"><span class="badge ok">✅</span></td><td>마지막이 값 표현식</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note info">
+    <div class="note-title">💡 핵심</div>
+    <div class="note-body">
+      <strong>표현식으로 쓸 때만 제약</strong>이 있습니다. 문장으로 쓸 때는 Java/C와 동일하게 자유롭습니다.
+      다음 예제에서 <strong>표현식 제약</strong>을 자세히 봅니다.
+    </div>
+  </div>
 
   <h3>if는 표현식이다 - Rust의 핵심 개념</h3>
   <div class="ex-label concept">예제 2-2: 삼항 연산자 대체</div>
@@ -5718,7 +5768,7 @@ error[E0106]: missing lifetime specifier
   </table>
 
   <div class="note ok">
-    <div class="note-title">🦀 환영합니다, Rustacean!</div>
+    <div class="note-title">🎉 환영합니다, Rustacean!</div>
     <div class="note-body">
       Java 개발자로서 이 가이드를 완주하신 것은 큰 성취입니다.
       Rust 커뮤니티는 초보자에게 친절합니다. 궁금한 점은 <a href="https://users.rust-lang.org/" target="_blank">공식 포럼</a>이나 한국 커뮤니티에 질문하세요. 즐거운 Rust 여정이 되길!
@@ -5816,7 +5866,7 @@ async function runCode(blockId, lang) {
       if (!/(?:^|\n)\s*(?:class|enum|interface|record)\s+\w+/.test(fixedCode)) {
         fixedCode = 'class Main {\npublic static void main(String[] args) {\n' + fixedCode + '\n}\n}';
       }
-      body = { compiler: compiler, code: fixedCode, save: false, 'compiler-option-raw': '-J-Dfile.encoding=UTF-8' };
+      body = { compiler: compiler, code: fixedCode, save: false, 'compiler-option-raw': '-J-Dfile.encoding=UTF-8', 'runtime-option-raw': '-Dfile.encoding=UTF-8' };
     } else {
       let fixedCode = code;
       if (!/fn\s+main\s*\(/.test(fixedCode)) {
