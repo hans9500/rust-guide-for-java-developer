@@ -292,6 +292,33 @@ td.center{text-align:center}
 .lifetime-svg-wrap{margin:14px 0;padding:12px;background:var(--bg1);border:1px solid var(--bd);border-radius:8px;overflow-x:auto}
 .lifetime-svg{display:block;max-width:100%;height:auto;margin:0 auto}
 .lifetime-svg text{font-family:'Consolas','Courier New',monospace}
+
+/* 공식 한글 문서 링크 박스 (옵션 B) */
+.official-doc-link {
+  margin: 10px 0 20px 0;
+  padding: 10px 14px;
+  background: rgba(86, 156, 214, 0.1);
+  border-left: 3px solid #569cd6;
+  border-radius: 4px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.official-doc-link .icon { font-size: 16px; }
+.official-doc-link .label { color: #858585; }
+.official-doc-link a {
+  color: #4ec9b0;
+  text-decoration: underline;
+  font-weight: bold;
+}
+.official-doc-link a:hover { color: #6ee4cc; }
+.official-doc-link .external-icon {
+  font-size: 11px;
+  color: #858585;
+  margin-left: 4px;
+}
 </style>
 </head>
 <body>
@@ -532,6 +559,11 @@ td.center{text-align:center}
 <section id="s1">
   <div class="sec-header">
     <h2>1. 변수와 타입</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch03-01-variables-and-mutability.html" target="_blank" rel="noopener noreferrer">변수와 가변성<span class="external-icon">↗</span></a>
   </div>
 
   <p>Rust의 <code>let</code>은 Java의 <code>var</code>와 비슷해 보이지만 결정적 차이가 있습니다: <strong>Rust의 변수는 기본 불변(immutable)</strong>입니다. Java의 <code>final</code>이 기본값이라고 생각하시면 됩니다.</p>
@@ -1023,6 +1055,11 @@ td.center{text-align:center}
   <div class="sec-header">
     <h2>2. 제어 흐름</h2>
   </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch03-05-control-flow.html" target="_blank" rel="noopener noreferrer">제어 흐름<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Rust의 <code>if</code>, <code>loop</code>, <code>while</code>, <code>for</code>는 Java와 비슷하지만 <strong>표현식</strong>이라는 큰 차이가 있습니다. 값을 반환할 수 있다는 뜻입니다.</p>
 
@@ -1370,7 +1407,13 @@ td.center{text-align:center}
   </div>
 </section>
 <section id="s3">
-  <div class="sec-header"><h2>3. 문장과 표현식 ⭐</h2></div>
+  <div class="sec-header"><h2>3. 문장과 표현식 ⭐</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 Reference (영문):</span>
+    <a href="https://doc.rust-lang.org/reference/statements-and-expressions.html" target="_blank" rel="noopener noreferrer">Statements and expressions (Rust Reference)<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Rust는 "거의 모든 것이 표현식"이라는 강한 철학을 가집니다. Java와 가장 다른 언어 설계 중 하나이고, 앞으로 모든 섹션에 영향을 미치는 핵심 개념입니다.</p>
 
@@ -1799,6 +1842,11 @@ error[E0308]: mismatched types
 <section id="s4">
   <div class="sec-header">
     <h2>4. 소유권 ⭐</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch04-01-what-is-ownership.html" target="_blank" rel="noopener noreferrer">소유권이 뭔가요?<span class="external-icon">↗</span></a>
   </div>
 
   <!-- ========== Part 1: 왜 소유권인가 ========== -->
@@ -2624,7 +2672,13 @@ Therefore, Rust doesn't need to free anything when s1 goes out of scope.</code><
   </div>
 </section>
 <section id="s5">
-  <div class="sec-header"><h2>5. 빌림 (Borrowing) ⭐</h2></div>
+  <div class="sec-header"><h2>5. 빌림 (Borrowing) ⭐</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch04-02-references-and-borrowing.html" target="_blank" rel="noopener noreferrer">참조와 대여<span class="external-icon">↗</span></a>
+  </div>
 
   <p>섹션 4에서 "소유권을 주고받는 게 불편하다"는 말씀을 드렸습니다. 이를 해결하는 것이 <strong>빌림</strong>입니다. 참조(<code>&amp;</code>)를 전달하면 소유권은 그대로 두고 <strong>값에만 접근</strong>할 수 있습니다.</p>
 
@@ -3415,7 +3469,13 @@ Therefore, Rust doesn't need to free anything when s1 goes out of scope.</code><
     <a class="src" href="https://doc.rust-kr.org/ch15-02-deref.html" target="_blank">15.2절 「Deref 트레이트로 스마트 포인터를 평범한 참조처럼」 (선행 개념)</a>
   </div>
 </section><section id="s6">
-  <div class="sec-header"><h2>6. 라이프타임 (Lifetimes) ⭐</h2></div>
+  <div class="sec-header"><h2>6. 라이프타임 (Lifetimes) ⭐</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch10-03-lifetime-syntax.html" target="_blank" rel="noopener noreferrer">라이프타임 문법<span class="external-icon">↗</span></a>
+  </div>
 
   <p>라이프타임은 <strong>참조가 유효한 범위</strong>를 컴파일 시점에 추적하는 시스템입니다. 이 섹션은 <strong>실제로 마주칠 수 있는 10가지 문제 상황과 해결 방법</strong>을 다룹니다.</p>
 
@@ -7026,7 +7086,13 @@ help: consider using the `&#x27;static` lifetime
     <a class="src" href="https://doc.rust-kr.org/ch10-03-lifetime-syntax.html" target="_blank">10.3절 「라이프타임으로 참조 유효하게 만들기」</a>
   </div>
 </section><section id="s7">
-  <div class="sec-header"><h2>7. 문자열 (String vs &amp;str)</h2></div>
+  <div class="sec-header"><h2>7. 문자열 (String vs &amp;str)</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch08-02-strings.html" target="_blank" rel="noopener noreferrer">문자열<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Rust 문자열은 자바 개발자에게 가장 헷갈리는 부분 중 하나입니다. <strong>두 가지 타입이 있고</strong>, 각각의 쓰임새가 명확히 다르기 때문입니다.</p>
 
@@ -7161,7 +7227,298 @@ help: consider using the `&#x27;static` lifetime
     </div>
   </div>
 
-  <div class="part-h">Part 3. 함수 파라미터 - &amp;str이 유연</div>
+  
+  <div class="part-h">Part 2½. 메서드 2가지 방식 — 자기 변경 vs 새 값 반환</div>
+
+  <p>String 메서드는 크게 두 부류로 나뉩니다. <strong>메서드 이름이 아니라 <code>self</code> 타입이 동작을 결정</strong>합니다.</p>
+
+  <div class="note info">
+    <div class="note-title">🌍 원문 (Rust 공식 - String::push_str)</div>
+    <div class="note-body">
+      <pre style="margin:8px 0;padding:10px;background:var(--bg2);border-radius:4px;font-size:12px;line-height:1.6"><code>push_str is designed to modify the String in place, 
+without creating a new String object. 
+This is key to understanding why it returns ().</code></pre>
+      <strong>원문 번역</strong>: <code>push_str</code>은 String을 <strong>제자리에서 수정</strong>하도록 설계되었으며, 새 String 객체를 만들지 않습니다. 
+      이것이 반환 타입이 <code>()</code>인 이유입니다.
+    </div>
+  </div>
+
+  <div class="note info">
+    <div class="note-title">💡 메서드 시그니처 3가지 — self 타입이 행동을 결정</div>
+    <div class="note-body">
+      <ul>
+        <li><code>fn method(<strong>&amp;self</strong>, ...)</code>: 원본 <strong>읽기만</strong> → 보통 새 값 반환</li>
+        <li><code>fn method(<strong>&amp;mut self</strong>, ...)</code>: 원본 <strong>변경</strong> → 보통 <code>()</code> 반환</li>
+        <li><code>fn method(<strong>self</strong>, ...)</code>: 원본 <strong>소유권 가져감</strong> → 변형된 값 반환</li>
+      </ul>
+      <strong>Java와의 차이</strong>: Java String은 항상 불변이라 <code>toUpperCase()</code>처럼 <strong>새 객체</strong>만 반환합니다. 
+      Rust는 두 방식 모두 제공 — 성능이 필요하면 제자리 변경, 원본 유지가 필요하면 새 값.
+    </div>
+  </div>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 340" xmlns="http://www.w3.org/2000/svg" style="background:#1e1e1e;border:1px solid #444;border-radius:4px;max-width:100%;height:auto">
+  <style>
+    .tit { fill:#d4d4d4; font:bold 13px ui-sans-serif; }
+    .hdr-mut { fill:#f48771; font:bold 13px ui-sans-serif; }
+    .hdr-new { fill:#4ec9b0; font:bold 13px ui-sans-serif; }
+    .code { fill:#d4d4d4; font:12px ui-monospace; }
+    .mut-sig { fill:#ce9178; font:bold 11px ui-monospace; }
+    .imm-sig { fill:#569cd6; font:bold 11px ui-monospace; }
+    .desc { fill:#858585; font:11px ui-sans-serif; }
+    .err { fill:#f48771; font:bold 11px ui-sans-serif; }
+    .ok { fill:#4ec9b0; font:bold 11px ui-sans-serif; }
+  </style>
+  <text x="16" y="22" class="tit">String 메서드 2가지 방식 — self 타입으로 동작이 결정됨</text>
+  
+  <!-- 좌측: 자기변경 -->
+  <rect x="16" y="45" width="300" height="265" fill="#442222" fill-opacity="0.15" stroke="#f48771" stroke-width="1" rx="6"/>
+  <text x="30" y="68" class="hdr-mut">🔴 자기 변경 (&amp;mut self)</text>
+  <text x="30" y="92" class="code">let <tspan class="mut-sig">mut</tspan> s = String::from("Hi");</text>
+  <text x="30" y="112" class="code">s.push_str(", World");</text>
+  <text x="30" y="135" class="desc">결과: s 자체가 "Hi, World"로 변함</text>
+  <text x="30" y="152" class="desc">반환값: () - 빈 튜플</text>
+  
+  <!-- 메모리 상태 -->
+  <line x1="30" y1="170" x2="306" y2="170" stroke="#555" stroke-width="1"/>
+  <text x="30" y="190" class="code">BEFORE:  s = "Hi"</text>
+  <text x="30" y="208" class="code">AFTER:   s = "Hi, World"  (같은 변수!)</text>
+  
+  <text x="30" y="238" class="err">특징:</text>
+  <text x="30" y="255" class="desc">• mut 선언 필수</text>
+  <text x="30" y="272" class="desc">• 추가 메모리 할당 최소 (효율)</text>
+  <text x="30" y="289" class="desc">• 체이닝 불가 (() 반환)</text>
+  
+  <!-- 우측: 새 값 반환 -->
+  <rect x="324" y="45" width="300" height="265" fill="#264f78" fill-opacity="0.15" stroke="#4ec9b0" stroke-width="1" rx="6"/>
+  <text x="338" y="68" class="hdr-new">🟢 새 값 반환 (&amp;self)</text>
+  <text x="338" y="92" class="code">let s = String::from("hi");</text>
+  <text x="338" y="112" class="code">let u = s.to_uppercase();</text>
+  <text x="338" y="135" class="desc">결과: s는 "hi" 그대로, u = "HI"</text>
+  <text x="338" y="152" class="desc">반환값: 새로운 String</text>
+  
+  <line x1="338" y1="170" x2="614" y2="170" stroke="#555" stroke-width="1"/>
+  <text x="338" y="190" class="code">BEFORE:  s = "hi"</text>
+  <text x="338" y="208" class="code">AFTER:   s = "hi", u = "HI"  (둘 다!)</text>
+  
+  <text x="338" y="238" class="ok">특징:</text>
+  <text x="338" y="255" class="desc">• mut 선언 불필요</text>
+  <text x="338" y="272" class="desc">• 원본 보존, 새 객체 생성</text>
+  <text x="338" y="289" class="desc">• 체이닝 가능: s.trim().to_uppercase()</text>
+  
+  <text x="16" y="330" class="ok">✓ 메서드 이름이 아니라 &lt;self 타입&gt;과 &lt;반환 타입&gt;으로 동작이 정해진다</text>
+</svg>
+  </div>
+
+  <h3>🔴 자기 자신 변경 메서드 10종 (&amp;mut self)</h3>
+  <p><code>mut</code> 선언 필수. 반환값은 <code>()</code> 또는 제거된 값. 체이닝 불가.</p>
+
+  <div class="ex-label concept">예제 7-Mut: 자기 변경 메서드 전체 실행</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s7_mut_methods')">복사</button>
+<button class="run-btn" onclick="runCode('r_s7_mut_methods','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s7_mut_methods">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 자기 자신을 변경하는 메서드들: &amp;<span class="kw">mut</span> <span class="kw">self</span>, 반환값 ()</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="cm">// String은 <span class="kw">mut</span> 선언 필수</span></span></div>
+<div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    <span class="cm">// <span class="nm">1</span>. push_str: 문자열 추가</span></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s1 = <span class="tp">String</span>::from(<span class="st">&quot;Hello&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    s1.push_str(<span class="st">&quot;, <span class="fn">World</span>!&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;push_str:        {}&quot;</span>, s1);</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="cm">// <span class="nm">2</span>. push: 문자 하나 추가</span></span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s2 = <span class="tp">String</span>::from(<span class="st">&quot;Hi&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">    s2.push(&#x27;!&#x27;);</span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;push:            {}&quot;</span>, s2);</span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">    <span class="cm">// <span class="nm">3</span>. insert: 특정 위치에 문자 삽입</span></span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s3 = <span class="tp">String</span>::from(<span class="st">&quot;Hllo&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">16</span><span class="line">    s3.insert(<span class="nm">1</span>, &#x27;e&#x27;);</span></div>
+<div class="code-row"><span class="ln">17</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;insert:          {}&quot;</span>, s3);</span></div>
+<div class="code-row"><span class="ln">18</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">19</span><span class="line">    <span class="cm">// <span class="nm">4</span>. insert_str: 특정 위치에 문자열 삽입</span></span></div>
+<div class="code-row"><span class="ln">20</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s4 = <span class="tp">String</span>::from(<span class="st">&quot;Hello !&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">21</span><span class="line">    s4.insert_str(<span class="nm">6</span>, <span class="st">&quot;World&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">22</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;insert_str:      {}&quot;</span>, s4);</span></div>
+<div class="code-row"><span class="ln">23</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">24</span><span class="line">    <span class="cm">// <span class="nm">5</span>. clear: 내용 전부 지우기</span></span></div>
+<div class="code-row"><span class="ln">25</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s5 = <span class="tp">String</span>::from(<span class="st">&quot;Hello&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">26</span><span class="line">    s5.clear();</span></div>
+<div class="code-row"><span class="ln">27</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;clear:           [{}] (빈 문자열)&quot;</span>, s5);</span></div>
+<div class="code-row"><span class="ln">28</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">29</span><span class="line">    <span class="cm">// <span class="nm">6</span>. truncate: 지정 길이로 자르기</span></span></div>
+<div class="code-row"><span class="ln">30</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s6 = <span class="tp">String</span>::from(<span class="st">&quot;Hello World&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">31</span><span class="line">    s6.truncate(<span class="nm">5</span>);</span></div>
+<div class="code-row"><span class="ln">32</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;truncate(<span class="nm">5</span>):     {}&quot;</span>, s6);</span></div>
+<div class="code-row"><span class="ln">33</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">34</span><span class="line">    <span class="cm">// <span class="nm">7</span>. pop: 마지막 문자 제거하고 반환</span></span></div>
+<div class="code-row"><span class="ln">35</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s7 = <span class="tp">String</span>::from(<span class="st">&quot;<span class="fn">Hello</span>!&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">36</span><span class="line">    <span class="kw">let</span> popped = s7.pop();</span></div>
+<div class="code-row"><span class="ln">37</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;pop:             s7={} / 반환={:?}&quot;</span>, s7, popped);</span></div>
+<div class="code-row"><span class="ln">38</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">39</span><span class="line">    <span class="cm">// <span class="nm">8</span>. remove: 특정 위치의 문자 제거</span></span></div>
+<div class="code-row"><span class="ln">40</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s8 = <span class="tp">String</span>::from(<span class="st">&quot;Hello&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">41</span><span class="line">    <span class="kw">let</span> removed = s8.remove(<span class="nm">0</span>);</span></div>
+<div class="code-row"><span class="ln">42</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;remove(<span class="nm">0</span>):       s8={} / 반환={}&quot;</span>, s8, removed);</span></div>
+<div class="code-row"><span class="ln">43</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">44</span><span class="line">    <span class="cm">// <span class="nm">9</span>. make_ascii_uppercase: 제자리에서 대문자화</span></span></div>
+<div class="code-row"><span class="ln">45</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s9 = <span class="tp">String</span>::from(<span class="st">&quot;hello&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">46</span><span class="line">    s9.make_ascii_uppercase();</span></div>
+<div class="code-row"><span class="ln">47</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;make_ascii_upper: {}&quot;</span>, s9);</span></div>
+<div class="code-row"><span class="ln">48</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">49</span><span class="line">    <span class="cm">// <span class="nm">10</span>. += 연산자 (push_str과 동일)</span></span></div>
+<div class="code-row"><span class="ln">50</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> s10 = <span class="tp">String</span>::from(<span class="st">&quot;Hello&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">51</span><span class="line">    s10 += <span class="st">&quot;, <span class="fn">World</span>!&quot;</span>;</span></div>
+<div class="code-row"><span class="ln">52</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;+=:              {}&quot;</span>, s10);</span></div>
+<div class="code-row"><span class="ln">53</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s7_mut_methods"></div>
+</div>
+
+  <div class="note info">
+    <div class="note-title">📋 자기 변경 메서드 정리</div>
+    <div class="note-body">
+      <table>
+        <thead><tr><th>메서드</th><th>역할</th><th>반환</th></tr></thead>
+        <tbody>
+          <tr><td><code>push_str(&amp;str)</code></td><td>문자열 뒤에 추가</td><td><code>()</code></td></tr>
+          <tr><td><code>push(char)</code></td><td>문자 하나 추가</td><td><code>()</code></td></tr>
+          <tr><td><code>insert(idx, char)</code></td><td>위치에 문자 삽입</td><td><code>()</code></td></tr>
+          <tr><td><code>insert_str(idx, &amp;str)</code></td><td>위치에 문자열 삽입</td><td><code>()</code></td></tr>
+          <tr><td><code>clear()</code></td><td>전부 지움</td><td><code>()</code></td></tr>
+          <tr><td><code>truncate(len)</code></td><td>지정 길이로 자름</td><td><code>()</code></td></tr>
+          <tr><td><code>pop()</code></td><td>마지막 문자 제거</td><td><code>Option&lt;char&gt;</code></td></tr>
+          <tr><td><code>remove(idx)</code></td><td>위치의 문자 제거</td><td><code>char</code></td></tr>
+          <tr><td><code>make_ascii_uppercase()</code></td><td>제자리 대문자화</td><td><code>()</code></td></tr>
+          <tr><td><code>+=</code> 연산자</td><td>push_str과 동일</td><td><code>()</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3>🟢 새 값 반환 메서드 10종 (&amp;self)</h3>
+  <p><code>mut</code> 불필요. 원본 그대로 유지. 체이닝 가능.</p>
+
+  <div class="ex-label concept">예제 7-New: 새 값 반환 메서드 전체 실행</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s7_new_methods')">복사</button>
+<button class="run-btn" onclick="runCode('r_s7_new_methods','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s7_new_methods">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 새 값을 반환하는 메서드들: 원본 불변, 새 값 반환</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="cm">// 원본은 <span class="kw">mut</span> 선언 불필요</span></span></div>
+<div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> s = <span class="tp">String</span>::from(<span class="st">&quot;Hello World&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    <span class="cm">// <span class="nm">1</span>. to_uppercase / to_lowercase: 새 <span class="tp">String</span> 반환</span></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> upper = s.to_uppercase();</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> lower = s.to_lowercase();</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;to_uppercase:    원본={} / 새값={}&quot;</span>, s, upper);</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;to_lowercase:    새값={}&quot;</span>, lower);</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">    <span class="cm">// <span class="nm">2</span>. replace: 새 <span class="tp">String</span> 반환</span></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">    <span class="kw">let</span> replaced = s.replace(<span class="st">&quot;World&quot;</span>, <span class="st">&quot;Rust&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;replace:         원본={} / 새값={}&quot;</span>, s, replaced);</span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">16</span><span class="line">    <span class="cm">// <span class="nm">3</span>. trim: 새 &amp;<span class="tp">str</span> 반환 (슬라이스)</span></span></div>
+<div class="code-row"><span class="ln">17</span><span class="line">    <span class="kw">let</span> padded = <span class="tp">String</span>::from(<span class="st">&quot;  hello  &quot;</span>);</span></div>
+<div class="code-row"><span class="ln">18</span><span class="line">    <span class="kw">let</span> trimmed = padded.trim();</span></div>
+<div class="code-row"><span class="ln">19</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;trim:            원본=[{}] / 새값=[{}]&quot;</span>, padded, trimmed);</span></div>
+<div class="code-row"><span class="ln">20</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">21</span><span class="line">    <span class="cm">// <span class="nm">4</span>. repeat: 새 <span class="tp">String</span> 반환</span></span></div>
+<div class="code-row"><span class="ln">22</span><span class="line">    <span class="kw">let</span> repeated = s.repeat(<span class="nm">2</span>);</span></div>
+<div class="code-row"><span class="ln">23</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;repeat(<span class="nm">2</span>):       새값={}&quot;</span>, repeated);</span></div>
+<div class="code-row"><span class="ln">24</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">25</span><span class="line">    <span class="cm">// <span class="nm">5</span>. + 연산자: 새 <span class="tp">String</span> 반환 (좌항은 소유권 이동)</span></span></div>
+<div class="code-row"><span class="ln">26</span><span class="line">    <span class="kw">let</span> a = <span class="tp">String</span>::from(<span class="st">&quot;Hello&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">27</span><span class="line">    <span class="kw">let</span> b = <span class="tp">String</span>::from(<span class="st">&quot; World&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">28</span><span class="line">    <span class="kw">let</span> c = a + &amp;b;     <span class="cm">// a는 <span class="fn">move됨</span>!</span></span></div>
+<div class="code-row"><span class="ln">29</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;+ 연산자:         새값={} (a는 move됨)&quot;</span>, c);</span></div>
+<div class="code-row"><span class="ln">30</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">31</span><span class="line">    <span class="cm">// <span class="nm">6</span>. <span class="fn">format</span>! 매크로: 새 <span class="tp">String</span> 반환</span></span></div>
+<div class="code-row"><span class="ln">32</span><span class="line">    <span class="kw">let</span> x = <span class="tp">String</span>::from(<span class="st">&quot;Hello&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">33</span><span class="line">    <span class="kw">let</span> y = <span class="tp">String</span>::from(<span class="st">&quot;World&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">34</span><span class="line">    <span class="kw">let</span> z = <span class="fn">format</span>!(<span class="st">&quot;{} {}&quot;</span>, x, y);</span></div>
+<div class="code-row"><span class="ln">35</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;<span class="fn">format</span>!:         원본유지 x={}, y={} / 새값={}&quot;</span>, x, y, z);</span></div>
+<div class="code-row"><span class="ln">36</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">37</span><span class="line">    <span class="cm">// <span class="nm">7</span>. split: Iterator 반환 (&amp; 슬라이스)</span></span></div>
+<div class="code-row"><span class="ln">38</span><span class="line">    <span class="kw">let</span> words: <span class="tp">Vec</span>&lt;&amp;<span class="tp">str</span>&gt; = s.split(&#x27; &#x27;).collect();</span></div>
+<div class="code-row"><span class="ln">39</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;split:           원본={} / 새값={:?}&quot;</span>, s, words);</span></div>
+<div class="code-row"><span class="ln">40</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">41</span><span class="line">    <span class="cm">// <span class="nm">8</span>. chars: Iterator 반환</span></span></div>
+<div class="code-row"><span class="ln">42</span><span class="line">    <span class="kw">let</span> first_char = s.chars().next();</span></div>
+<div class="code-row"><span class="ln">43</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;chars.next:      원본={} / 새값={:?}&quot;</span>, s, first_char);</span></div>
+<div class="code-row"><span class="ln">44</span><span class="line">    </span></div>
+<div class="code-row"><span class="ln">45</span><span class="line">    <span class="cm">// <span class="nm">9</span>. len / is_empty: 숫자/불린 반환</span></span></div>
+<div class="code-row"><span class="ln">46</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;len:             {} (원본 그대로)&quot;</span>, s.len());</span></div>
+<div class="code-row"><span class="ln">47</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;is_empty:        {}&quot;</span>, s.is_empty());</span></div>
+<div class="code-row"><span class="ln">48</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s7_new_methods"></div>
+</div>
+
+  <div class="note info">
+    <div class="note-title">📋 새 값 반환 메서드 정리</div>
+    <div class="note-body">
+      <table>
+        <thead><tr><th>메서드</th><th>역할</th><th>반환</th></tr></thead>
+        <tbody>
+          <tr><td><code>to_uppercase()</code></td><td>대문자 새 String</td><td><code>String</code></td></tr>
+          <tr><td><code>to_lowercase()</code></td><td>소문자 새 String</td><td><code>String</code></td></tr>
+          <tr><td><code>replace(from, to)</code></td><td>치환한 새 String</td><td><code>String</code></td></tr>
+          <tr><td><code>trim()</code></td><td>공백 제거 슬라이스</td><td><code>&amp;str</code></td></tr>
+          <tr><td><code>repeat(n)</code></td><td>n번 반복한 새 String</td><td><code>String</code></td></tr>
+          <tr><td><code>split(pat)</code></td><td>분리한 Iterator</td><td><code>Iterator&lt;&amp;str&gt;</code></td></tr>
+          <tr><td><code>chars()</code></td><td>문자 Iterator</td><td><code>Iterator&lt;char&gt;</code></td></tr>
+          <tr><td><code>len()</code></td><td>바이트 길이</td><td><code>usize</code></td></tr>
+          <tr><td><code>is_empty()</code></td><td>빈 문자열인지</td><td><code>bool</code></td></tr>
+          <tr><td><code>format!</code> 매크로</td><td>포매팅된 String</td><td><code>String</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <div class="note-title">⚠️ 헷갈리는 포인트</div>
+    <div class="note-body">
+      <ul>
+        <li><strong>이름 비슷한데 동작 반대</strong>:
+          <br><code>to_ascii_uppercase()</code> → 새 String 반환 (원본 불변)
+          <br><code>make_ascii_uppercase()</code> → 제자리 변경 (<code>()</code> 반환)
+          <br>"make_*"는 "이대로 만들어라" = 제자리 변경 신호.
+        </li>
+        <li><strong><code>+</code> 연산자 특수함</strong>:
+          <br><code>let c = a + &amp;b;</code> — 좌항 <code>a</code>의 <strong>소유권 이동</strong>. 이후 <code>a</code> 사용 불가.
+          <br>참고로 우항 <code>b</code>는 참조로 전달하므로 그대로 유지.
+        </li>
+        <li><strong><code>trim()</code>은 <code>String</code>이 아닌 <code>&amp;str</code> 반환</strong>:
+          <br>원본의 슬라이스(빌림)일 뿐, 새 String이 필요하면 <code>.trim().to_string()</code>.
+        </li>
+        <li><strong>체이닝 가능 여부</strong>:
+          <br>✓ <code>s.trim().to_uppercase().replace("A", "B")</code> (전부 새 값 반환)
+          <br>✗ <code>s.push_str("x").push('!')</code> (push_str이 <code>()</code> 반환, 연속 불가)
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note ok">
+    <div class="note-title">✅ 선택 기준</div>
+    <div class="note-body">
+      <ul>
+        <li><strong>성능 중요 + 원본 불필요</strong> → 자기 변경 (&amp;mut self)</li>
+        <li><strong>원본 보존 필요 or 체이닝 쓰고 싶음</strong> → 새 값 반환 (&amp;self)</li>
+        <li><strong>기본적으로는 &amp;self 방식 선호</strong> — 부작용 적고 추론 쉬움</li>
+      </ul>
+    </div>
+  </div>
+
+    <div class="part-h">Part 3. 함수 파라미터 - &amp;str이 유연</div>
 
   <div class="ex-label concept">예제 7-5: &amp;str 파라미터</div>
   <div class="single"><div class="eb">
@@ -7276,7 +7633,13 @@ help: consider using the `&#x27;static` lifetime
     <a class="src" href="https://doc.rust-kr.org/ch08-02-strings.html" target="_blank">8.2절 「문자열」</a>
   </div>
 </section><section id="s8">
-  <div class="sec-header"><h2>8. 구조체와 메서드</h2></div>
+  <div class="sec-header"><h2>8. 구조체와 메서드</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch05-00-structs.html" target="_blank" rel="noopener noreferrer">구조체<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Rust의 <code>struct</code>는 Java의 <code>class</code>와 비슷하지만, <strong>데이터와 메서드가 분리</strong>되어 있습니다. <code>struct</code>로 필드를 정의하고 <code>impl</code> 블록에서 메서드를 구현합니다.</p>
 
@@ -7817,7 +8180,13 @@ help: consider using the `&#x27;static` lifetime
 
 </section>
 <section id="s9">
-  <div class="sec-header"><h2>9. enum과 패턴 매칭 ⭐</h2></div>
+  <div class="sec-header"><h2>9. enum과 패턴 매칭 ⭐</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch06-00-enums.html" target="_blank" rel="noopener noreferrer">열거형과 패턴 매칭<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Rust의 <code>enum</code>은 Java의 <code>enum</code>과 이름만 같고 <strong>훨씬 강력</strong>합니다. 각 variant가 <strong>서로 다른 데이터</strong>를 가질 수 있는 <strong>대수적 데이터 타입(ADT)</strong>입니다. 함수형 언어의 강점을 Rust에 가져온 핵심 기능입니다.</p>
 
@@ -8140,7 +8509,13 @@ help: consider using the `&#x27;static` lifetime
     <a class="src" href="https://doc.rust-kr.org/ch18-00-patterns.html" target="_blank">18장 「패턴과 매칭」</a>
   </div>
 </section><section id="s10">
-  <div class="sec-header"><h2>10. Option&lt;T&gt; - Null의 안전한 대체</h2></div>
+  <div class="sec-header"><h2>10. Option&lt;T&gt; - Null의 안전한 대체</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch06-01-defining-an-enum.html" target="_blank" rel="noopener noreferrer">열거형 정의하기 (Option)<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Rust에는 <code>null</code>이 없습니다. 대신 <strong>Option&lt;T&gt; enum</strong>으로 "값이 있을 수도, 없을 수도" 를 타입 시스템에 명시합니다. Java의 <code>Optional&lt;T&gt;</code>와 거의 같은 개념이지만 <strong>강제성</strong>이 다릅니다.</p>
 
@@ -8402,7 +8777,13 @@ help: consider using the `&#x27;static` lifetime
     <a class="src" href="https://doc.rust-kr.org/ch06-01-defining-an-enum.html" target="_blank">6.1절 「열거형 정의하기」 - Option</a>
   </div>
 </section><section id="s11">
-  <div class="sec-header"><h2>11. Result&lt;T, E&gt; - 예외 없는 에러 처리</h2></div>
+  <div class="sec-header"><h2>11. Result&lt;T, E&gt; - 예외 없는 에러 처리</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch09-02-recoverable-errors-with-result.html" target="_blank" rel="noopener noreferrer">Result로 에러 처리<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Rust는 <strong>예외(exception)가 없습니다</strong>. 대신 에러 가능성을 <strong>타입으로 표현</strong>합니다. Java <code>throws</code> 선언보다 강력하고, 호출자가 에러 처리를 <strong>반드시</strong> 고려하게 만듭니다.</p>
 
@@ -8631,7 +9012,13 @@ help: consider using the `&#x27;static` lifetime
     <a class="src" href="https://doc.rust-kr.org/ch09-02-recoverable-errors-with-result.html" target="_blank">9.2절 「Result로 복구 가능한 에러 처리하기」</a>
   </div>
 </section><section id="s12">
-  <div class="sec-header"><h2>12. 에러 처리 — ? 연산자</h2></div>
+  <div class="sec-header"><h2>12. 에러 처리 — ? 연산자</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch09-00-error-handling.html" target="_blank" rel="noopener noreferrer">에러 처리<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Result/Option을 매번 match로 풀면 코드가 장황해집니다. Rust는 <strong><code>?</code> 연산자</strong>로 이를 한 글자로 해결합니다.</p>
 
@@ -8884,7 +9271,13 @@ help: consider using the `&#x27;static` lifetime
     <a class="src" href="https://doc.rust-kr.org/ch09-00-error-handling.html" target="_blank">9장 「에러 처리」</a>
   </div>
 </section><section id="s13">
-  <div class="sec-header"><h2>13. 제네릭 (Generics)</h2></div>
+  <div class="sec-header"><h2>13. 제네릭 (Generics)</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch10-01-syntax.html" target="_blank" rel="noopener noreferrer">제네릭 데이터 타입<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Rust 제네릭은 Java와 문법은 비슷하지만 <strong>내부 동작이 완전히 다릅니다</strong>. Java는 타입 소거(erasure), Rust는 <strong>단형화(monomorphization)</strong>입니다.</p>
 
@@ -9141,7 +9534,13 @@ help: consider using the `&#x27;static` lifetime
     <a class="src" href="https://doc.rust-kr.org/ch10-01-syntax.html" target="_blank">10.1절 「제네릭 데이터 타입」</a>
   </div>
 </section><section id="s14">
-  <div class="sec-header"><h2>14. 트레잇 (Trait) ⭐</h2></div>
+  <div class="sec-header"><h2>14. 트레잇 (Trait) ⭐</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch10-02-traits.html" target="_blank" rel="noopener noreferrer">트레이트<span class="external-icon">↗</span></a>
+  </div>
 
   <p>트레잇은 Java의 <code>interface</code>에 해당합니다. 하지만 <strong>상속 없는 Rust에서 유일한 다형성 수단</strong>이고, <strong>기본 구현</strong>과 <strong>정적/동적 디스패치 선택</strong>이 가능합니다.</p>
 
@@ -9492,7 +9891,13 @@ help: consider using the `&#x27;static` lifetime
   </div>
 </section>
 <section id="s15">
-  <div class="sec-header"><h2>15. 컬렉션 (Vec, HashMap, HashSet)</h2></div>
+  <div class="sec-header"><h2>15. 컬렉션 (Vec, HashMap, HashSet)</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch08-00-common-collections.html" target="_blank" rel="noopener noreferrer">일반적인 컬렉션<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Rust 표준 라이브러리의 3가지 주요 컬렉션을 다룹니다. Java의 <code>ArrayList</code>, <code>HashMap</code>, <code>HashSet</code>에 대응합니다.</p>
 
@@ -9771,7 +10176,13 @@ help: consider using the `&#x27;static` lifetime
     <a class="src" href="https://doc.rust-kr.org/ch08-00-common-collections.html" target="_blank">8장 「일반적인 컬렉션」</a>
   </div>
 </section><section id="s16">
-  <div class="sec-header"><h2>16. 클로저와 Iterator ⭐</h2></div>
+  <div class="sec-header"><h2>16. 클로저와 Iterator ⭐</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch13-01-closures.html" target="_blank" rel="noopener noreferrer">클로저<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Java Stream API와 람다에 익숙한 분들에게 <strong>가장 비슷해 보이지만</strong>, Rust는 <strong>소유권이 클로저에 녹아 있어</strong> 훨씬 정교합니다. 이 섹션은 길지만 꼼꼼히 봐주세요.</p>
 
@@ -10336,7 +10747,13 @@ help: consider using the `&#x27;static` lifetime
     <a class="src" href="https://doc.rust-kr.org/ch13-02-iterators.html" target="_blank">13.2절 「이터레이터」</a>
   </div>
 </section><section id="s17">
-  <div class="sec-header"><h2>17. 동시성 (Concurrency)</h2></div>
+  <div class="sec-header"><h2>17. 동시성 (Concurrency)</h2>
+  </div>
+  <div class="official-doc-link">
+    <span class="icon">📚</span>
+    <span class="label">Rust 공식 한글 문서:</span>
+    <a href="https://doc.rust-kr.org/ch16-00-concurrency.html" target="_blank" rel="noopener noreferrer">겁 없는 동시성<span class="external-icon">↗</span></a>
+  </div>
 
   <p>Rust는 <strong>"두려움 없는 동시성(Fearless Concurrency)"</strong>을 표방합니다. 소유권 시스템이 <strong>데이터 레이스를 컴파일 시점에 차단</strong>하기 때문입니다. Java의 <code>synchronized</code> 누락 같은 실수가 원천적으로 불가능합니다.</p>
 
