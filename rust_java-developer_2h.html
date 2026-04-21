@@ -498,7 +498,7 @@ td.center{text-align:center}
     <a class="src" href="https://doc.rust-kr.org/ch03-03-how-functions-work.html" target="_blank">3.3절 「함수의 동작 원리」</a>
   </div>
 
-  <div class="part-h" style="margin-top:28px">📖 이 가이드에서 사용하는 약어</div>
+  <div class="part-h" style="margin-top:28px">이 가이드에서 사용하는 약어</div>
   <table>
     <thead>
       <tr><th>약어</th><th>풀네임 (영문)</th><th>의미 / 설명</th></tr>
@@ -639,11 +639,23 @@ td.center{text-align:center}
 </div>
 <div class="vp" id="r_s1_3">
 <div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
-<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> x = <span class="nm">5</span>;</span></div>
-<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> x = x + <span class="nm">1</span>;       <span class="cm">// 새 x로 가림(shadow)</span></span></div>
-<div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> x = x * <span class="nm">2</span>;</span></div>
-<div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;x = {x}&quot;</span>);  <span class="cm">// <span class="nm">12</span></span></span></div>
-<div class="code-row"><span class="ln">6</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="cm">// <span class="nm">1</span>) 같은 타입 재선언 (기존)</span></span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> x = <span class="nm">5</span>;</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> x = x + <span class="nm">1</span>;       <span class="cm">// 이전 x를 숨김(shadow)</span></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">let</span> x = x * <span class="nm">2</span>;</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;x = {x}&quot;</span>);  <span class="cm">// <span class="nm">12</span></span></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="cm">// <span class="nm">2</span>) 타입을 바꾸는 쉐도잉 - Rust만의 강점</span></span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">let</span> spaces = <span class="st">&quot;   &quot;</span>;          <span class="cm">// &amp;<span class="tp">str</span> 타입</span></span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="kw">let</span> spaces = spaces.len();   <span class="cm">// <span class="tp">usize</span> 타입으로 쉐도잉</span></span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;빈칸 개수: {spaces}&quot;</span>);  <span class="cm">// <span class="nm">3</span></span></span></div>
+<div class="code-row"><span class="ln">12</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">    <span class="cm">// <span class="nm">3</span>) 쉐도잉된 변수를 나중에 사용</span></span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">    <span class="kw">let</span> name = <span class="st">&quot;Alice&quot;</span>;                 <span class="cm">// &amp;<span class="tp">str</span></span></span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">    <span class="kw">let</span> name = name.to_uppercase();     <span class="cm">// String으로 변환+쉐도잉</span></span></div>
+<div class="code-row"><span class="ln">16</span><span class="line">    <span class="kw">let</span> name = <span class="fn">format</span>!(<span class="st">&quot;[{}]&quot;</span>, name);   <span class="cm">// String으로 꾸밈</span></span></div>
+<div class="code-row"><span class="ln">17</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{name}&quot;</span>);                  <span class="cm">// [ALICE]</span></span></div>
+<div class="code-row"><span class="ln">18</span><span class="line">}</span></div>
 </div>
 <div class="run-output" id="out_r_s1_3"></div>
 </div></div></div>
@@ -690,7 +702,20 @@ td.center{text-align:center}
 <div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
 </div>
 <div class="run-output" id="out_r_s1_4"></div>
-</div></div></div>
+</div></div>
+
+  <div class="note info">
+    <div class="note-title">💡 const 문법 상세</div>
+    <div class="note-body">
+      <ul>
+        <li><strong>타입 명시 필수</strong>: <code>const MAX_PAGES: u32 = 10000;</code> (타입 생략 불가)</li>
+        <li><strong>이름 규칙</strong>: 대문자 + 언더스코어 (<code>SCREAMING_SNAKE_CASE</code>)</li>
+        <li><strong>컴파일 시점 상수</strong>: 런타임 계산 불가 (함수 호출 결과 등 사용 불가)</li>
+        <li><strong>let과의 차이</strong>: <code>const</code>는 <code>mut</code> 불가, 스코프 제한 없음(모듈/함수 어디든)</li>
+        <li><strong>static과의 차이</strong>: <code>static</code>은 메모리 고정 주소, <code>const</code>는 인라인(사본 생성)</li>
+      </ul>
+    </div>
+  </div></div>
 
   <table>
     <thead><tr><th>구분</th><th class="col-java">Java</th><th class="col-rust">Rust</th></tr></thead>
@@ -852,6 +877,135 @@ td.center{text-align:center}
 </div></div></div>
 
   <div class="note info">
+    <div class="note-title">💡 Java의 record는 Rust의 struct와 비슷</div>
+    <div class="note-body">
+      Java는 튜플이 없지만, <strong>Java 14+의 <code>record</code></strong>로 비슷한 역할을 할 수 있습니다.
+      <code>record</code>는 <strong>불변 데이터 클래스</strong>로, 생성자/getter/<code>equals</code>/<code>hashCode</code>가 자동 생성됩니다.
+      Rust의 <code>struct</code> + <code>#[derive(PartialEq)]</code> 조합과 역할이 같습니다.
+    </div>
+  </div>
+
+  <div class="ex-label concept">예제 1-7b: Java record ↔ Rust struct</div>
+  <div class="g2"><div><div class="eb">
+<div class="et">
+<span class="el"><span class="lang-icon">☕</span><span class="lang-name">Java</span></span>
+<button class="ec" onclick="cp('j_s1_record')">복사</button>
+<button class="run-btn" onclick="runCode('j_s1_record','java')">▷ 실행</button>
+</div>
+<div class="vp" id="j_s1_record">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// Java <span class="nm">14</span>+ <span class="kw">record</span> - 자바의 &#x27;튜플 비슷한&#x27; 대안</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">public</span> <span class="kw">class</span> Main {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="cm">// <span class="kw">record</span> = 불변 데이터 클래스 (필드+생성자+getter+equals+hashCode 자동)</span></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">public</span> <span class="kw">record</span> Book(<span class="tp">String</span> title, <span class="tp">int</span> pages, <span class="tp">double</span> price) {}</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    <span class="kw">public</span> <span class="kw">static</span> <span class="kw">void</span> main(<span class="tp">String</span>[] args) {</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">        Book b = <span class="kw">new</span> Book(<span class="st">&quot;Rust&quot;</span>, <span class="nm">300</span>, <span class="nm">29.99</span>);</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">        <span class="cm">// 필드 접근: 메서드 호출 (getter 자동 생성)</span></span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">        <span class="tp">System</span>.out.println(b.title() + <span class="st">&quot;: &quot;</span> + b.pages() + <span class="st">&quot;p, $&quot;</span> + b.price());</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">        <span class="cm">// equals/hashCode 자동 - 값 비교 가능</span></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">        Book b2 = <span class="kw">new</span> Book(<span class="st">&quot;Rust&quot;</span>, <span class="nm">300</span>, <span class="nm">29.99</span>);</span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">        <span class="tp">System</span>.out.println(<span class="st">&quot;same? &quot;</span> + b.equals(b2));  <span class="cm">// <span class="kw">true</span></span></span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">16</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_j_s1_record"></div>
+</div></div><div><div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s1_record')">복사</button>
+<button class="run-btn" onclick="runCode('r_s1_record','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s1_record">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 튜플 <span class="kw">struct</span> - Java record와 호출 스타일이 비슷</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="cm">// 필드 이름 없이 타입만 나열, 값은 순서대로 넣고 b.<span class="nm">0</span>, b.<span class="nm">1</span>, b.2로 접근</span></span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">#[derive(Debug, PartialEq)]</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line"><span class="kw">struct</span> Book(<span class="tp">String</span>, <span class="tp">u32</span>, <span class="tp">f64</span>);</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="cm">// Java: new Book(<span class="st">&quot;Rust&quot;</span>, <span class="nm">300</span>, <span class="nm">29.99</span>) 와 유사한 스타일</span></span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> b = Book(<span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>), <span class="nm">300</span>, <span class="nm">29.99</span>);</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="cm">// 필드 접근: 이름 대신 인덱스 (0부터)</span></span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}: {}p, ${}&quot;</span>, b.<span class="nm">0</span>, b.<span class="nm">1</span>, b.<span class="nm">2</span>);</span></div>
+<div class="code-row"><span class="ln">12</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">    <span class="cm">// PartialEq derive로 == 비교 (Java record equals 대응)</span></span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">    <span class="kw">let</span> b2 = Book(<span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>), <span class="nm">300</span>, <span class="nm">29.99</span>);</span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;same? {}&quot;</span>, b == b2);</span></div>
+<div class="code-row"><span class="ln">16</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s1_record"></div>
+</div></div></div>
+
+  <table>
+    <thead><tr><th>항목</th><th class="col-java">Java record</th><th class="col-rust">Rust 튜플 struct</th></tr></thead>
+    <tbody>
+      <tr><td>선언</td><td><code>public record Book(String t, int p) {}</code></td><td><code>struct Book(String, u32);</code></td></tr>
+      <tr><td>호출 스타일</td><td><code>new Book("Rust", 300)</code></td><td><code>Book(String::from("Rust"), 300)</code></td></tr>
+      <tr><td>필드 접근</td><td><code>b.title()</code> — 메서드</td><td><code>b.0</code>, <code>b.1</code> — 인덱스</td></tr>
+      <tr><td>값 비교</td><td>자동 (<code>equals</code>)</td><td><code>#[derive(PartialEq)]</code> 필요</td></tr>
+      <tr><td>불변성</td><td>자동 (모든 필드 final)</td><td>선택 (<code>let</code> 또는 <code>let mut</code>)</td></tr>
+      <tr><td>출력</td><td>자동 (<code>toString</code>)</td><td><code>#[derive(Debug)]</code> 필요</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note info">
+    <div class="note-title">💡 튜플 struct vs 일반 struct — 언제 무엇을 쓸까?</div>
+    <div class="note-body">
+      <ul>
+        <li><strong>튜플 struct</strong> (<code>struct Book(String, u32, f64);</code>): 
+          필드 이름이 불필요할 때. 예: <code>Point(i32, i32)</code>, <code>Color(u8, u8, u8)</code>. 
+          Java <code>record</code>와 <strong>호출 스타일이 가장 비슷</strong>합니다.</li>
+        <li><strong>일반 struct</strong> (<code>struct Book { title, pages, price }</code>): 
+          필드가 많거나 이름으로 의미를 명확히 해야 할 때. 
+          <strong>실무에서 더 흔히 쓰입니다.</strong></li>
+        <li>각 struct는 <strong>타입명이 다르면 서로 다른 타입</strong>으로 취급됩니다. 
+          예: <code>Point(i32, i32)</code>와 <code>Color(i32, i32, i32)</code>는 완전히 다른 타입.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="ex-label concept">참고: 일반 struct 버전 (이름 있는 필드)</div>
+  <div class="single"><div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s1_record_named')">복사</button>
+<button class="run-btn" onclick="runCode('r_s1_record_named','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s1_record_named">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 일반 <span class="kw">struct</span> - 필드에 이름이 있어 가독성 좋음 (실무에서 더 흔함)</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">#[derive(Debug, PartialEq)]</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">struct</span> Book {</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    title: <span class="tp">String</span>,</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    pages: <span class="tp">u32</span>,</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    price: <span class="tp">f64</span>,</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">9</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="kw">let</span> b = Book {</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">        title: <span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>),</span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">        pages: <span class="nm">300</span>,</span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">        price: <span class="nm">29.99</span>,</span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">    };</span></div>
+<div class="code-row"><span class="ln">15</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">16</span><span class="line">    <span class="cm">// 필드 접근: 점 표기법 + 이름</span></span></div>
+<div class="code-row"><span class="ln">17</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}: {}p, ${}&quot;</span>, b.title, b.pages, b.price);</span></div>
+<div class="code-row"><span class="ln">18</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">19</span><span class="line">    <span class="kw">let</span> b2 = Book {</span></div>
+<div class="code-row"><span class="ln">20</span><span class="line">        title: <span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>),</span></div>
+<div class="code-row"><span class="ln">21</span><span class="line">        pages: <span class="nm">300</span>,</span></div>
+<div class="code-row"><span class="ln">22</span><span class="line">        price: <span class="nm">29.99</span>,</span></div>
+<div class="code-row"><span class="ln">23</span><span class="line">    };</span></div>
+<div class="code-row"><span class="ln">24</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;same? {}&quot;</span>, b == b2);</span></div>
+<div class="code-row"><span class="ln">25</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s1_record_named"></div>
+</div></div>
+
+
+
+  <div class="note info">
     <div class="note-title">💡 Rust 포매팅 문법</div>
     <div class="note-body">
       <code>println!("{title}")</code>처럼 중괄호에 <strong>변수명을 바로 쓸 수 있습니다</strong> (Rust 1.58+).
@@ -863,6 +1017,8 @@ td.center{text-align:center}
     <span class="srcs-label">출처:</span>
     <a class="src" href="https://doc.rust-kr.org/ch03-01-variables-and-mutability.html" target="_blank">3.1절 「변수와 가변성」</a>
     <a class="src" href="https://doc.rust-kr.org/ch03-02-data-types.html" target="_blank">3.2절 「데이터 타입」</a>
+  
+    <a class="src" href="https://doc.rust-kr.org/ch05-01-defining-structs.html" target="_blank">5.1절 「구조체 정의와 초기화」</a>
   </div>
 </section>
 <section id="s2">
@@ -1077,7 +1233,7 @@ td.center{text-align:center}
 <div class="code-row"><span class="ln">8</span><span class="line">        <span class="cm">// 향상된 for문 (<span class="kw">for</span>-each)</span></span></div>
 <div class="code-row"><span class="ln">9</span><span class="line">        <span class="tp">String</span>[] books = {<span class="st">&quot;Rust&quot;</span>, <span class="st">&quot;Java&quot;</span>, <span class="st">&quot;Go&quot;</span>};</span></div>
 <div class="code-row"><span class="ln">10</span><span class="line">        <span class="kw">for</span> (<span class="tp">String</span> book : books) {</span></div>
-<div class="code-row"><span class="ln">11</span><span class="line">            <span class="tp">System</span>.out.println(<span class="st">&quot;📖 &quot;</span> + book);</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">            <span class="tp">System</span>.out.println(book);</span></div>
 <div class="code-row"><span class="ln">12</span><span class="line">        }</span></div>
 <div class="code-row"><span class="ln">13</span><span class="line">    }</span></div>
 <div class="code-row"><span class="ln">14</span><span class="line">}</span></div>
@@ -1099,7 +1255,7 @@ td.center{text-align:center}
 <div class="code-row"><span class="ln">7</span><span class="line">    <span class="cm">// 배열 순회</span></span></div>
 <div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> books = [<span class="st">&quot;Rust&quot;</span>, <span class="st">&quot;Java&quot;</span>, <span class="st">&quot;Go&quot;</span>];</span></div>
 <div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">for</span> book <span class="kw">in</span> books {</span></div>
-<div class="code-row"><span class="ln">10</span><span class="line">        <span class="fn">println</span>!(<span class="st">&quot;📖 {book}&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">        <span class="fn">println</span>!(<span class="st">&quot;{book}&quot;</span>);</span></div>
 <div class="code-row"><span class="ln">11</span><span class="line">    }</span></div>
 <div class="code-row"><span class="ln">12</span><span class="line">}</span></div>
 </div>
@@ -1162,7 +1318,42 @@ td.center{text-align:center}
 <div class="code-row"><span class="ln">11</span><span class="line">}</span></div>
 </div>
 <div class="run-output" id="out_r_s2_6"></div>
-</div></div></div>
+</div></div>
+</div>
+
+  <div class="note info">
+    <div class="note-title">💡 라벨과 break value 조합</div>
+    <div class="note-body">
+      <code>loop</code>(while/for 아님)에서는 <code>break 'label value;</code> 형태로
+      라벨을 가리키면서 <strong>값까지 반환</strong>할 수 있습니다.
+      중첩 loop에서 안쪽에서 바깥 loop를 값과 함께 종료할 때 유용합니다.
+    </div>
+  </div>
+
+  <div class="ex-label concept">예제 2-6b: 'outer loop에서 값 반환</div>
+  <div class="single"><div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s2_break_value')">복사</button>
+<button class="run-btn" onclick="runCode('r_s2_break_value','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s2_break_value">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="cm">// <span class="kw">loop</span> + 라벨 + <span class="kw">break</span> value 조합</span></span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> result = &#x27;outer: <span class="kw">loop</span> {</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> count = <span class="nm">0</span>;</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">        <span class="kw">loop</span> {</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">            count += <span class="nm">1</span>;</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">            <span class="kw">if</span> count == <span class="nm">5</span> {</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">                <span class="kw">break</span> &#x27;outer count * <span class="nm">10</span>;   <span class="cm">// 바깥 loop에서 값 <span class="fn">반환</span>!</span></span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">            }</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">    };</span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;result = {result}&quot;</span>);  <span class="cm">// <span class="nm">50</span></span></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s2_break_value"></div>
+</div></div>
 
   <div class="note info">
     <div class="note-title">💡 라벨 문법 차이</div>
@@ -1215,7 +1406,7 @@ td.center{text-align:center}
 </div>
 <div class="vp" id="r_s3_1">
 <div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
-<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> x = <span class="nm">5</span>;                <span class="cm">// 리터럴: 표현식</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> x = <span class="nm">5</span>;                <span class="cm">// 5는 리터럴(표현식), let문 전체는 문장</span></span></div>
 <div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> y = x + <span class="nm">10</span>;           <span class="cm">// 연산: 표현식</span></span></div>
 <div class="code-row"><span class="ln">4</span><span class="line">    <span class="cm">// if도 표현식이라 값을 반환</span></span></div>
 <div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">let</span> z = <span class="kw">if</span> x &gt; <span class="nm">0</span> { <span class="st">&quot;양수&quot;</span> } <span class="kw">else</span> { <span class="st">&quot;음수&quot;</span> };</span></div>
@@ -1271,6 +1462,22 @@ td.center{text-align:center}
 </div>
 <div class="run-output" id="out_r_s3_3"></div>
 </div></div>
+
+  <div class="note info">
+    <div class="note-title">💡 never 타입 <code>!</code> — return, panic!, loop 등의 타입</div>
+    <div class="note-body">
+      <code>return</code>, <code>panic!()</code>, <code>unreachable!()</code>, <code>process::exit()</code>, 
+      무한 <code>loop {}</code> 등은 <strong>절대 값을 반환하지 않으므로</strong> 
+      <strong>never 타입 <code>!</code></strong>을 가집니다.
+      <br><br>
+      <code>!</code>는 <strong>어떤 타입으로든 변환 가능</strong>한 "바닥 타입(bottom type)"입니다.
+      그래서 아래처럼 한쪽은 값, 다른 쪽은 <code>return</code>인 표현식도 성립합니다:
+      <pre style="margin:8px 0 0;padding:8px;background:var(--bg2);border-radius:4px;font-size:12px"><code>let x = if cond { 10 } else { return };  // ✓ OK
+//              i32        !  (i32로 변환됨)</code></pre>
+      <code>println!</code>, <code>vec!</code> 같은 매크로는 그 자체가 "never"는 아닙니다
+      (정상적으로 값을 반환할 수 있음). 하지만 <code>panic!</code>은 never입니다.
+    </div>
+  </div>
 
   <div class="note info">
     <div class="note-title">💡 블록이 값을 가진다는 의미</div>
@@ -1776,7 +1983,18 @@ error[E0308]: mismatched types
   </div>
 
   <!-- ========== Part 4: Copy trait ========== -->
-  <div class="part-h">Part 4. Copy trait - 왜 i32는 move 안 되나</div>
+  <div 
+  <div class="note info">
+    <div class="note-title">💡 구조체도 복사하고 싶다면?</div>
+    <div class="note-body">
+      <code>#[derive(Clone)]</code> 또는 <code>#[derive(Copy, Clone)]</code>을 구조체 위에 붙이면 
+      복사가 가능해집니다.
+      <strong>derive 메커니즘과 여러 트레잇 자동 구현은 <a href="#s8">섹션 8의 마지막 Part</a>에서</strong>
+      자세히 다룹니다.
+    </div>
+  </div>
+
+class="part-h">Part 4. Copy trait - 왜 i32는 move 안 되나</div>
 
   <p>그런데 의문이 생깁니다. "그럼 <code>let y = x;</code> 했을 때 x도 못 쓰게 되는 거야?" — 아닙니다. <strong>고정 크기의 단순 타입은 move 대신 복사</strong>됩니다.</p>
 
@@ -1862,7 +2080,7 @@ error[E0308]: mismatched types
 <div class="vp" id="j_s4_5">
 <div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">public</span> <span class="kw">class</span> Main {</span></div>
 <div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">static</span> <span class="kw">void</span> printBook(<span class="tp">String</span> title) {</span></div>
-<div class="code-row"><span class="ln">3</span><span class="line">        <span class="tp">System</span>.out.println(<span class="st">&quot;📖 &quot;</span> + title);</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">        <span class="tp">System</span>.out.println(title);</span></div>
 <div class="code-row"><span class="ln">4</span><span class="line">    }</span></div>
 <div class="code-row"><span class="ln">5</span><span class="line"></span></div>
 <div class="code-row"><span class="ln">6</span><span class="line">    <span class="kw">public</span> <span class="kw">static</span> <span class="kw">void</span> main(<span class="tp">String</span>[] args) {</span></div>
@@ -1882,7 +2100,7 @@ error[E0308]: mismatched types
 </div>
 <div class="vp" id="r_s4_5">
 <div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> print_book(title: <span class="tp">String</span>) {</span></div>
-<div class="code-row"><span class="ln">2</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;📖 {title}&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{title}&quot;</span>);</span></div>
 <div class="code-row"><span class="ln">3</span><span class="line">}  <span class="cm">// &lt;-- 여기서 title drop</span></span></div>
 <div class="code-row"><span class="ln">4</span><span class="line"></span></div>
 <div class="code-row"><span class="ln">5</span><span class="line"><span class="kw">fn</span> main() {</span></div>
@@ -2128,7 +2346,7 @@ error[E0308]: mismatched types
 </div>
 <div class="vp" id="r_s5_1">
 <div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> print_book(title: &amp;<span class="tp">String</span>) {     <span class="cm">// 참조만 빌림</span></span></div>
-<div class="code-row"><span class="ln">2</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;📖 {title}&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{title}&quot;</span>);</span></div>
 <div class="code-row"><span class="ln">3</span><span class="line">}</span></div>
 <div class="code-row"><span class="ln">4</span><span class="line"></span></div>
 <div class="code-row"><span class="ln">5</span><span class="line"><span class="kw">fn</span> main() {</span></div>
@@ -4361,7 +4579,7 @@ help: consider using the `&#x27;static` lifetime
 <div class="vp" id="r_s7_5">
 <div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// &amp;str를 받으면 String도, &amp;str도 모두 전달 가능</span></span></div>
 <div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> print_title(s: &amp;<span class="tp">str</span>) {</span></div>
-<div class="code-row"><span class="ln">3</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;📖 {s}&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{s}&quot;</span>);</span></div>
 <div class="code-row"><span class="ln">4</span><span class="line">}</span></div>
 <div class="code-row"><span class="ln">5</span><span class="line"></span></div>
 <div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">fn</span> main() {</span></div>
@@ -4804,6 +5022,205 @@ help: consider using the `&#x27;static` lifetime
     <a class="src" href="https://doc.rust-kr.org/ch05-00-structs.html" target="_blank">5장 「구조체」</a>
     <a class="src" href="https://doc.rust-kr.org/ch05-03-method-syntax.html" target="_blank">5.3절 「메서드 문법」</a>
   </div>
+
+
+  <div class="part-h">Part — <code>#[derive]</code>로 자동 구현하기</div>
+
+  <p><code>#[derive(...)]</code>는 구조체에 붙여서 <strong>컴파일러가 트레잇 구현을 자동 생성</strong>하도록
+  지시하는 <strong>속성(attribute)</strong>입니다. 직접 <code>impl</code>을 쓰지 않아도 되어 코드가 간결해집니다.</p>
+
+  <div class="note info">
+    <div class="note-title">💡 컴파일러가 자동으로 하는 일</div>
+    <div class="note-body">
+      <code>#[derive(Clone)]</code>을 붙이면 컴파일러가 아래와 같은 코드를 자동으로 만듭니다:
+      <pre style="margin:8px 0 0;padding:8px;background:var(--bg2);border-radius:4px;font-size:12px"><code>impl Clone for Book {
+    fn clone(&self) -> Self {
+        Book {
+            title: self.title.clone(),   // 필드마다 .clone() 호출
+            pages: self.pages.clone(),
+        }
+    }
+}</code></pre>
+      즉 <strong>필드마다 <code>.clone()</code> 호출</strong>하는 단순한 코드입니다. 
+      조건: <strong>모든 필드가 해당 트레잇을 구현</strong>하고 있어야 derive 가능.
+    </div>
+  </div>
+
+  <div class="ex-label concept">예제 8-D1: <code>Debug</code> — <code>{:?}</code>로 출력</div>
+  <div class="single"><div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_d1')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_d1','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s8_d1">
+<div class="code-row"><span class="ln">1</span><span class="line">#[derive(Debug)]</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">struct</span> Book {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    title: <span class="tp">String</span>,</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    pages: <span class="tp">u32</span>,</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> b = Book { title: <span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>), pages: <span class="nm">300</span> };</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{:?}&quot;</span>, b);     <span class="cm">// 한 줄 Debug</span></span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{:#?}&quot;</span>, b);    <span class="cm">// pretty print (들여쓰기)</span></span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_d1"></div>
+</div></div>
+
+  <p><code>Debug</code>가 없으면 <code>println!("{:?}", b)</code>는 컴파일 에러입니다. 
+  대부분의 구조체에 기본적으로 붙이는 트레잇입니다.</p>
+
+  <div class="ex-label concept">예제 8-D2: <code>Clone</code> — 명시적 복사</div>
+  <div class="single"><div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_d2')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_d2','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s8_d2">
+<div class="code-row"><span class="ln">1</span><span class="line">#[derive(Debug, Clone)]</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">struct</span> Book {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    title: <span class="tp">String</span>,    <span class="cm">// String은 Copy가 아니므로 Clone 필요</span></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    pages: <span class="tp">u32</span>,</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> b1 = Book { title: <span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>), pages: <span class="nm">300</span> };</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">let</span> b2 = b1.clone();                 <span class="cm">// 명시적 복사</span></span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="cm">// 컴파일러가 자동 생성: Book { title: b1.title.clone(), pages: b1.pages.clone() }</span></span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{:?}&quot;</span>, b1);                <span class="cm">// ✓ b1 사용 가능</span></span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{:?}&quot;</span>, b2);                <span class="cm">// ✓ b2도 사용 가능</span></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_d2"></div>
+</div></div>
+
+  <p><code>String</code>, <code>Vec</code> 등을 필드로 가진 구조체는 <strong><code>Copy</code> 불가</strong>이므로 
+  <code>Clone</code>만 파생합니다. 복사가 필요할 때 <code>.clone()</code>을 <strong>명시적으로</strong> 호출합니다.</p>
+
+  <div class="ex-label concept">예제 8-D3: <code>Copy + Clone</code> — 암묵적 복사</div>
+  <div class="single"><div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_d3')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_d3','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s8_d3">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// Copy 파생 조건: 모든 필드가 Copy여야 함 (<span class="tp">String</span> 있으면 불가)</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">#[derive(Debug, Copy, Clone)]</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">struct</span> Point {</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    x: <span class="tp">i32</span>,</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    y: <span class="tp">i32</span>,</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">8</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">let</span> p1 = Point { x: <span class="nm">1</span>, y: <span class="nm">2</span> };</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="kw">let</span> p2 = p1;                 <span class="cm">// 암묵적 Copy (.clone() 불필요)</span></span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{:?}&quot;</span>, p1);        <span class="cm">// ✓ p1도 사용 가능</span></span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{:?}&quot;</span>, p2);</span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_d3"></div>
+</div></div>
+
+  <div class="note warn">
+    <div class="note-title">⚠️ Copy는 Clone과 함께 (supertrait 관계)</div>
+    <div class="note-body">
+      <code>Copy</code>는 <strong>Clone의 특수 버전</strong>이라서 혼자 쓸 수 없습니다. 
+      반드시 <code>#[derive(Copy, Clone)]</code>로 같이 써야 합니다.
+      <strong>조건</strong>: 모든 필드가 <code>Copy</code>여야 가능 
+      (<code>String</code>, <code>Vec</code> 등 힙 소유 타입이 하나라도 있으면 불가).
+    </div>
+  </div>
+
+  <div class="ex-label concept">예제 8-D4: <code>PartialEq</code> — <code>==</code> 비교</div>
+  <div class="single"><div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_d4')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_d4','rust')">▷ 실행</button>
+</div>
+<div class="vp" id="r_s8_d4">
+<div class="code-row"><span class="ln">1</span><span class="line">#[derive(Debug, PartialEq)]</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">struct</span> Book {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    title: <span class="tp">String</span>,</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    pages: <span class="tp">u32</span>,</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">fn</span> main() {</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> b1 = Book { title: <span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>), pages: <span class="nm">300</span> };</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">let</span> b2 = Book { title: <span class="tp">String</span>::from(<span class="st">&quot;Rust&quot;</span>), pages: <span class="nm">300</span> };</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="kw">let</span> b3 = Book { title: <span class="tp">String</span>::from(<span class="st">&quot;Go&quot;</span>),   pages: <span class="nm">500</span> };</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">    <span class="cm">// == 와 != 사용 가능 (필드별 비교)</span></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;b1 == b2: {}&quot;</span>, b1 == b2);  <span class="cm">// <span class="kw">true</span></span></span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;b1 == b3: {}&quot;</span>, b1 == b3);  <span class="cm">// <span class="kw">false</span></span></span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_d4"></div>
+</div></div>
+
+  <div class="part-h" style="font-size:14px;margin-top:16px">📋 필드 구성별 derive 선택 가이드</div>
+
+  <table>
+    <thead>
+      <tr><th>필드 구성</th><th>권장 derive</th><th>복사 방식</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>모든 필드 primitive (<code>i32</code>, <code>bool</code> 등)</td>
+        <td><code>#[derive(Debug, Copy, Clone, PartialEq)]</code></td>
+        <td>암묵적 (move 없음)</td>
+      </tr>
+      <tr>
+        <td><code>String</code>, <code>Vec</code> 등 포함</td>
+        <td><code>#[derive(Debug, Clone, PartialEq)]</code></td>
+        <td>명시적 <code>.clone()</code></td>
+      </tr>
+      <tr>
+        <td>가변 참조 <code>&amp;mut T</code> 포함</td>
+        <td><code>#[derive(Clone)]</code> (Copy 불가)</td>
+        <td>명시적 <code>.clone()</code></td>
+      </tr>
+      <tr>
+        <td>복제 안 하고 싶음 (move만)</td>
+        <td>derive 생략</td>
+        <td>move만 가능</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="part-h" style="font-size:14px;margin-top:16px">🎯 자주 쓰는 derive 트레잇</div>
+
+  <table>
+    <thead>
+      <tr><th>트레잇</th><th>자동 생성되는 기능</th><th>사용 예</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>Debug</code></td><td>디버그 출력</td><td><code>println!("{:?}", x)</code></td></tr>
+      <tr><td><code>Clone</code></td><td>명시적 복사</td><td><code>let y = x.clone()</code></td></tr>
+      <tr><td><code>Copy</code></td><td>암묵적 복사 (Clone 필수)</td><td><code>let y = x;</code> (원본 유지)</td></tr>
+      <tr><td><code>PartialEq</code>, <code>Eq</code></td><td><code>==</code> <code>!=</code> 비교</td><td><code>if a == b {}</code></td></tr>
+      <tr><td><code>Hash</code></td><td>해시값 계산</td><td><code>HashMap</code>/<code>HashSet</code> 키</td></tr>
+      <tr><td><code>Default</code></td><td>기본값 생성</td><td><code>Book::default()</code></td></tr>
+      <tr><td><code>Ord</code>, <code>PartialOrd</code></td><td>크기 비교, 정렬</td><td><code>.sort()</code> 가능</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note ok">
+    <div class="note-title">✅ 실전 패턴</div>
+    <div class="note-body">
+      <ul>
+        <li>99%의 구조체에는 <code>#[derive(Debug)]</code> 추가 (디버깅 편의)</li>
+        <li>함수 인자로 복사해서 넘기거나 여러 곳에 저장할 필요가 있으면 <code>Clone</code> 추가</li>
+        <li><code>HashMap</code> 키로 쓰려면 <code>Hash + Eq</code> (PartialEq도 자동) 추가</li>
+        <li>수동 <code>impl</code>은 <strong>특수 로직이 필요할 때만</strong>. 대부분 derive로 충분.</li>
+      </ul>
+    </div>
+  </div>
+
 </section>
 <section id="s9">
   <div class="sec-header"><h2>9. enum과 패턴 매칭 ⭐</h2></div>
@@ -6220,7 +6637,7 @@ help: consider using the `&#x27;static` lifetime
 <div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">fn</span> title(&amp;<span class="kw">self</span>) -&gt; <span class="tp">String</span>;</span></div>
 <div class="code-row"><span class="ln">3</span><span class="line">    <span class="cm">// 기본 구현 제공 (Java interface default 메서드)</span></span></div>
 <div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">fn</span> preview(&amp;<span class="kw">self</span>) -&gt; <span class="tp">String</span> {</span></div>
-<div class="code-row"><span class="ln">5</span><span class="line">        <span class="fn">format</span>!(<span class="st">&quot;📖 {}&quot;</span>, <span class="kw">self</span>.title())</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">        <span class="fn">format</span>!(<span class="st">&quot;{}&quot;</span>, <span class="kw">self</span>.title())</span></div>
 <div class="code-row"><span class="ln">6</span><span class="line">    }</span></div>
 <div class="code-row"><span class="ln">7</span><span class="line">}</span></div>
 <div class="code-row"><span class="ln">8</span><span class="line"></span></div>
@@ -6233,7 +6650,7 @@ help: consider using the `&#x27;static` lifetime
 <div class="code-row"><span class="ln">15</span><span class="line"></span></div>
 <div class="code-row"><span class="ln">16</span><span class="line"><span class="kw">fn</span> main() {</span></div>
 <div class="code-row"><span class="ln">17</span><span class="line">    <span class="kw">let</span> b = Book { name: <span class="st">&quot;Rust&quot;</span>.into() };</span></div>
-<div class="code-row"><span class="ln">18</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, b.preview());        <span class="cm">// 📖 Rust</span></span></div>
+<div class="code-row"><span class="ln">18</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{}&quot;</span>, b.preview());        <span class="cm">// Rust</span></span></div>
 <div class="code-row"><span class="ln">19</span><span class="line">}</span></div>
 </div>
 <div class="run-output" id="out_r_s14_2"></div>
@@ -6376,7 +6793,7 @@ help: consider using the `&#x27;static` lifetime
 <div class="code-row"><span class="ln">4</span><span class="line"><span class="kw">struct</span> Book;</span></div>
 <div class="code-row"><span class="ln">5</span><span class="line"></span></div>
 <div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">impl</span> Readable <span class="kw">for</span> Book {</span></div>
-<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">fn</span> read(&amp;<span class="kw">self</span>) { <span class="fn">println</span>!(<span class="st">&quot;📖 읽는중&quot;</span>); }</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">fn</span> read(&amp;<span class="kw">self</span>) { <span class="fn">println</span>!(<span class="st">&quot;읽는중&quot;</span>); }</span></div>
 <div class="code-row"><span class="ln">8</span><span class="line">}</span></div>
 <div class="code-row"><span class="ln">9</span><span class="line"><span class="kw">impl</span> Lendable <span class="kw">for</span> Book {</span></div>
 <div class="code-row"><span class="ln">10</span><span class="line">    <span class="kw">fn</span> lend(&amp;<span class="kw">self</span>) { <span class="fn">println</span>!(<span class="st">&quot;📤 대여중&quot;</span>); }</span></div>
@@ -6568,7 +6985,7 @@ help: consider using the `&#x27;static` lifetime
 <div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> books = <span class="fn">vec</span>![<span class="st">&quot;Rust&quot;</span>, <span class="st">&quot;Go&quot;</span>, <span class="st">&quot;Python&quot;</span>];</span></div>
 <div class="code-row"><span class="ln">3</span><span class="line"></span></div>
 <div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">for</span> b <span class="kw">in</span> &amp;books {                    <span class="cm">// 불변 참조로 순회</span></span></div>
-<div class="code-row"><span class="ln">5</span><span class="line">        <span class="fn">println</span>!(<span class="st">&quot;📖 {b}&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">        <span class="fn">println</span>!(<span class="st">&quot;{b}&quot;</span>);</span></div>
 <div class="code-row"><span class="ln">6</span><span class="line">    }</span></div>
 <div class="code-row"><span class="ln">7</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;총 {}권&quot;</span>, books.len());     <span class="cm">// books 여전히 유효</span></span></div>
 <div class="code-row"><span class="ln">8</span><span class="line">}</span></div>
@@ -6840,7 +7257,7 @@ help: consider using the `&#x27;static` lifetime
 </div>
 <div class="vp" id="r_s16_3">
 <div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
-<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> prefix = <span class="tp">String</span>::from(<span class="st">&quot;📖 &quot;</span>);</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> prefix = <span class="tp">String</span>::new();</span></div>
 <div class="code-row"><span class="ln">3</span><span class="line">    <span class="cm">// prefix를 &amp;로 빌림 (Fn)</span></span></div>
 <div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> add_prefix = |s: &amp;<span class="tp">str</span>| <span class="fn">format</span>!(<span class="st">&quot;{prefix}{s}&quot;</span>);</span></div>
 <div class="code-row"><span class="ln">5</span><span class="line"></span></div>
