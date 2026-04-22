@@ -453,6 +453,41 @@ section h4 {
   padding-left: 18px;
 }
 
+/* ===== note 내부 quote 구분 ===== */
+.note-body blockquote.official-quote {
+  background: rgba(0, 0, 0, 0.35);
+  border-left: 3px solid #4ec9b0;
+  border-top: 1px solid rgba(78,201,176,.2);
+  border-bottom: 1px solid rgba(78,201,176,.2);
+  border-right: 1px solid rgba(78,201,176,.2);
+  margin: 14px 0;
+}
+.note-body blockquote.official-quote p {
+  color: #b8bfc8;
+  font-size: 13px;
+}
+.note-body blockquote.official-quote cite {
+  color: #60a5fa;
+  font-size: 12px;
+}
+
+/* ===== note 내부 table 구분 =====
+.note-body table th {
+  background: #0d1b2e;
+  color: #9cdcfe;
+  border: 1px solid #2a3a5a;
+}
+.note-body table td {
+  background: #111827;
+  border: 1px solid #2a3a5a;
+}
+.note-body table tr:nth-child(even) td {
+  background: #0f1520;
+}
+.note-body table tr:hover td {
+  background: #162035;
+}
+
 /* ===== 사이드바 드롭다운 ===== */
 .sb-item {
   position: relative;
@@ -2425,9 +2460,123 @@ error[E0308]: mismatched types
     </div>
   </div>
 
-class="part-h">Part 4. Copy trait - 왜 i32는 move 안 되나</div>
+<div class="part-h">Part 4. Copy trait - 왜 i32는 move 안 되나</div>
 
   <p>그런데 의문이 생깁니다. "그럼 <code>let y = x;</code> 했을 때 x도 못 쓰게 되는 거야?" — 아닙니다. <strong>고정 크기의 단순 타입은 move 대신 복사</strong>됩니다.</p>
+
+<div class="note info">
+<div class="note-title">💡 왜 i32는 복사되고, struct는 Move인가? — Copy trait과 Sized 완전 이해</div>
+<div class="note-body">
+
+<p>복사가 일어나는 기준은 <strong>"크기가 작다"가 아니라 <code>Copy</code> trait 구현 여부</strong>입니다.<br>
+<code>i32</code>, <code>f64</code>, <code>bool</code> 등의 기본 타입은 표준 라이브러리가 이미 <code>Copy</code>를 구현해두었습니다.<br>
+반면 우리가 직접 만든 <code>struct</code>는 <strong>명시적으로 선언하지 않으면 Copy가 아닙니다.</strong></p>
+
+<blockquote class="official-quote"><p>By default, variable bindings have move semantics. However, if a type implements Copy, it instead has copy semantics.</p><cite>— std::marker::Copy 공식 문서</cite><p style="color:#858585;font-size:13px;margin-top:8px;padding-top:7px;border-top:1px dashed #2e2e2e;font-style:normal">▸ 기본적으로 변수 바인딩은 move 의미론을 가집니다. 그러나 타입이 Copy를 구현하면 copy 의미론을 가집니다.</p></blockquote>
+
+<h4>케이스 1 — 필드가 i32뿐인 struct: Copy 가능하지만 기본은 Move</h4>
+<p>모든 필드가 <code>Copy</code>이므로 Copy를 구현할 수 있는 조건은 충족하지만, 선언하지 않으면 여전히 Move입니다.</p>
+<div class="g2"><div>
+<p style="color:#f48771;font-size:12px;font-weight:700;margin-bottom:4px">✗ #[derive(Copy)] 없음 → Move</p>
+<div class="eb"><div class="et"><span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span></div><div class="vp" style="overflow-x:auto">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">struct</span> <span class="tp">Point</span> { x: <span class="tp">i32</span>, y: <span class="tp">i32</span> }</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="cm">// #[derive(Copy)]가 없으면 Move</span></span></div>
+<div class="code-row"><span class="ln">3</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line"><span class="kw">let</span> p1 = <span class="tp">Point</span> { x: <span class="nu">1</span>, y: <span class="nu">2</span> };</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line"><span class="kw">let</span> p2 = p1;  <span class="cm">// Move 발생</span></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"><span class="cm">// p1 사용 불가 → 컴파일 에러</span></span></div>
+</div></div>
+</div><div>
+<p style="color:#4ec9b0;font-size:12px;font-weight:700;margin-bottom:4px">✓ #[derive(Copy, Clone)] 선언 → 복사</p>
+<div class="eb"><div class="et"><span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span></div><div class="vp" style="overflow-x:auto">
+<div class="code-row"><span class="ln">1</span><span class="line">#[<span class="fn">derive</span>(<span class="tp">Copy</span>, <span class="tp">Clone</span>)]</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">struct</span> <span class="tp">Point</span> { x: <span class="tp">i32</span>, y: <span class="tp">i32</span> }</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line"><span class="kw">let</span> p1 = <span class="tp">Point</span> { x: <span class="nu">1</span>, y: <span class="nu">2</span> };</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line"><span class="kw">let</span> p2 = p1;  <span class="cm">// 비트 복사</span></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"><span class="cm">// p1 여전히 사용 가능 ✓</span></span></div>
+</div></div>
+</div></div>
+
+<blockquote class="official-quote"><p>A type can implement Copy if all of its components implement Copy.</p><cite>— std::marker::Copy 공식 문서</cite><p style="color:#858585;font-size:13px;margin-top:8px;padding-top:7px;border-top:1px dashed #2e2e2e;font-style:normal">▸ 타입은 모든 구성 요소가 Copy를 구현한 경우에만 Copy를 구현할 수 있습니다.</p></blockquote>
+
+<h4>케이스 2 — String이 포함된 struct: Copy 자체가 불가</h4>
+<p><code>String</code>은 힙에 문자열 버퍼를 소유합니다. 비트 복사가 허용된다면 두 변수가 같은 힙 메모리를 가리켜 <strong>double free</strong>가 발생합니다.<br>
+<code>String</code>은 <code>Drop</code>을 구현하고 있으며, <strong><code>Drop</code>을 구현한 타입은 Copy가 될 수 없습니다.</strong></p>
+<div class="g2"><div>
+<p style="color:#f48771;font-size:12px;font-weight:700;margin-bottom:4px">✗ String 포함 → E0204 에러</p>
+<div class="eb"><div class="et"><span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span></div><div class="vp" style="overflow-x:auto">
+<div class="code-row"><span class="ln">1</span><span class="line">#[<span class="fn">derive</span>(<span class="tp">Copy</span>, <span class="tp">Clone</span>)]  <span class="cm">// 컴파일 에러!</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">struct</span> <span class="tp">Book</span> {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    title: <span class="tp">String</span>,  <span class="cm">// String은 Copy 아님</span></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    pages: <span class="tp">i32</span>,</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"><span class="cm">// E0204: the trait `Copy` may not be</span></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"><span class="cm">// implemented for this type</span></span></div>
+</div></div>
+</div><div>
+<p style="color:#4ec9b0;font-size:12px;font-weight:700;margin-bottom:4px">✓ Clone으로 명시적 복사</p>
+<div class="eb"><div class="et"><span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span></div><div class="vp" style="overflow-x:auto">
+<div class="code-row"><span class="ln">1</span><span class="line">#[<span class="fn">derive</span>(<span class="tp">Clone</span>)]  <span class="cm">// Copy 대신 Clone</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">struct</span> <span class="tp">Book</span> {</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    title: <span class="tp">String</span>,</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    pages: <span class="tp">i32</span>,</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">let</span> b1 = <span class="tp">Book</span> {</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    title: <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">&quot;Rust&quot;</span>),</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    pages: <span class="nu">500</span>,</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">};</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line"><span class="kw">let</span> b2 = b1.<span class="fn">clone</span>(); <span class="cm">// 명시적 복사</span></span></div>
+<div class="code-row"><span class="ln">11</span><span class="line"><span class="cm">// b1 여전히 사용 가능 ✓</span></span></div>
+</div></div>
+</div></div>
+
+<blockquote class="official-quote"><p>Copying String would duplicate responsibility for managing the String&#x27;s buffer, leading to a double free. Generalizing the latter case, any type implementing Drop can&#x27;t be Copy, because it&#x27;s managing some resource besides its own size_of::&lt;T&gt; bytes.</p><cite>— std::marker::Copy 공식 문서</cite><p style="color:#858585;font-size:13px;margin-top:8px;padding-top:7px;border-top:1px dashed #2e2e2e;font-style:normal">▸ String을 복사하면 String의 버퍼 관리 책임이 중복되어 double free가 발생합니다. Drop을 구현한 타입은 자신의 size_of::&lt;T&gt; 바이트 외의 리소스를 관리하기 때문에 Copy가 될 수 없습니다.</p></blockquote>
+
+<h4>전체 정리</h4>
+<table>
+<thead><tr><th>타입</th><th>Copy?</th><th>이유</th></tr></thead>
+<tbody>
+<tr><td><code>i32</code>, <code>f64</code>, <code>bool</code></td><td style="color:#4ec9b0;font-weight:600">✓ Copy</td><td>표준 라이브러리가 이미 구현</td></tr>
+<tr><td><code>struct Point &#123; x: i32, y: i32 &#125;</code></td><td style="color:#f48771;font-weight:600">✗ Move</td><td>조건은 충족하지만 <code>#[derive(Copy)]</code> 선언 안 함</td></tr>
+<tr><td><code>#[derive(Copy, Clone)] struct Point</code></td><td style="color:#4ec9b0;font-weight:600">✓ Copy</td><td>명시적 선언 + 모든 필드가 Copy</td></tr>
+<tr><td><code>struct Book &#123; title: String, .. &#125;</code></td><td style="color:#f48771;font-weight:600">✗ 불가</td><td><code>String</code>은 <code>Drop</code> 구현 → Copy 자체 불가 (E0204)</td></tr>
+</tbody>
+</table>
+
+<h4>Sized와 Copy — 완전히 다른 개념</h4>
+<p><code>Sized</code>와 <code>Copy</code>는 둘 다 마커 trait이지만 <strong>전혀 다른 의미</strong>입니다.</p>
+
+<blockquote class="official-quote"><p>Types with a constant size known at compile time.</p><cite>— std::marker::Sized 공식 문서</cite><p style="color:#858585;font-size:13px;margin-top:8px;padding-top:7px;border-top:1px dashed #2e2e2e;font-style:normal">▸ 컴파일 타임에 크기가 알려진 타입입니다.</p></blockquote>
+
+<p><code>Sized</code>는 <strong>"컴파일 타임에 크기를 알 수 있는가"</strong>를 나타냅니다.<br>
+<code>String</code>은 힙에 가변 길이 데이터를 저장하지만, 스택에서는 <strong>포인터·길이·용량 3개의 usize = 24바이트로 고정</strong>이므로 <code>Sized</code>입니다.<br>
+반면 <code>str</code>(슬라이스 자체)은 길이가 런타임에 결정되므로 <code>Sized</code>가 아닙니다.</p>
+
+<blockquote class="official-quote"><p>A type gets an auto Sized implementation if all of its members are also Sized.</p><cite>— pretzelhammer/rust-blog, Sizedness in Rust</cite><p style="color:#858585;font-size:13px;margin-top:8px;padding-top:7px;border-top:1px dashed #2e2e2e;font-style:normal">▸ 모든 멤버가 Sized이면 타입은 자동으로 Sized 구현을 얻습니다.</p></blockquote>
+
+<table>
+<thead><tr><th>trait</th><th>의미</th><th>구현 방식</th><th>String은?</th></tr></thead>
+<tbody>
+<tr><td><code>Sized</code></td><td>컴파일 타임에 크기 확정</td><td><strong>자동</strong> (컴파일러가 부여)</td><td style="color:#4ec9b0;font-weight:600">✓ Sized<br><span style="font-size:11px;color:#858585">(포인터 24바이트 고정)</span></td></tr>
+<tr><td><code>Copy</code></td><td>비트 복사 허용</td><td><strong>명시적 선언</strong> 필요</td><td style="color:#f48771;font-weight:600">✗ Copy 불가<br><span style="font-size:11px;color:#858585">(Drop 구현 → double free)</span></td></tr>
+</tbody>
+</table>
+
+<p><strong>Sized ≠ Copy</strong> — 크기가 고정되어 있다고 비트 복사가 허용되는 것이 아닙니다.</p>
+
+<h4>왜 Rust는 struct에 Copy를 자동으로 부여하지 않는가?</h4>
+<p>지금은 <code>i32</code>만 있는 struct라도 나중에 <code>String</code> 필드가 추가되면 Copy가 불가능해집니다.<br>
+만약 Rust가 자동으로 Copy를 부여했다면 필드 추가 시 <strong>기존 코드가 조용히 깨집니다.</strong></p>
+
+<blockquote class="official-quote"><p>Keep in mind, though, that implementing Copy is part of the public API of your type. If the type might become non-Copy in the future, it could be prudent to omit the Copy implementation now, to avoid a breaking API change.</p><cite>— std::marker::Copy 공식 문서</cite><p style="color:#858585;font-size:13px;margin-top:8px;padding-top:7px;border-top:1px dashed #2e2e2e;font-style:normal">▸ Copy를 구현하는 것은 타입의 공개 API의 일부임을 명심하세요. 타입이 미래에 Copy가 불가능해질 수 있다면, 호환성을 깨는 API 변경을 피하기 위해 지금 Copy 구현을 생략하는 것이 현명할 수 있습니다.</p></blockquote>
+
+<p><strong>결론</strong>: <code>Copy</code>는 크기와 무관합니다.<br>
+모든 필드가 <code>Copy</code>이고 <code>#[derive(Copy, Clone)]</code>을 선언해야만 비트 복사가 허용됩니다.<br>
+<code>String</code>, <code>Vec&lt;T&gt;</code>처럼 <code>Drop</code>을 구현한 타입이 하나라도 있으면 Copy는 불가능합니다.</p>
+
+</div>
+</div>
 
   <div class="ex-label concept">예제 4-4: i32, bool은 Copy</div>
   <div class="g2"><div><div class="eb">
