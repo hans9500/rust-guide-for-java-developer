@@ -839,18 +839,18 @@ blockquote.official-quote .ko-mem strong { color: #4ec9b0; }
     <button class="sb-plus" onclick="toggleDD(this)">+</button>
     <a class="sb-a" href="#s21"><span class="sb-tit">21. 전체 예제</span></a>
     <div class="sb-dd">
-      <a href="#s20-part1" class="sb-dd-a">Part 1. 사용된 개념</a>
-      <a href="#s20-part2" class="sb-dd-a">Part 2. 전체 소스</a>
+      <a href="#s21-part1" class="sb-dd-a">Part 1. 사용된 개념</a>
+      <a href="#s21-part2" class="sb-dd-a">Part 2. 전체 소스</a>
     </div>
   </div>
     <div class="sb-item">
     <button class="sb-plus" onclick="toggleDD(this)">+</button>
     <a class="sb-a" href="#s22"><span class="sb-tit">22. CLI 테트리스</span></a>
     <div class="sb-dd">
-      <a href="#s21-part1" class="sb-dd-a">로컬 실행 방법</a>
-      <a href="#s21-part2" class="sb-dd-a">소스 구조 분석</a>
-      <a href="#s21-part3" class="sb-dd-a">main.rs 전체 소스</a>
-      <a href="#s21-part4" class="sb-dd-a">Cargo.toml</a>
+      <a href="#s22-part1" class="sb-dd-a">로컬 실행 방법</a>
+      <a href="#s22-part2" class="sb-dd-a">소스 구조 분석</a>
+      <a href="#s22-part3" class="sb-dd-a">main.rs 전체 소스</a>
+      <a href="#s22-part4" class="sb-dd-a">Cargo.toml</a>
     </div>
   </div>
   <a class="sb-a" href="#s23" style="padding-left:18px"><span class="sb-tit">23. 마무리</span></a>
@@ -7789,6 +7789,113 @@ help: consider using the `&#x27;static` lifetime
 <div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
 </div>
 <div class="run-output" id="out_r_s6_10_good"></div>
+</div>
+
+<div class="note info" style="margin-bottom:14px">
+  <div class="note-title">💡 예제 6-11 · 6-12 — 배우는 것</div>
+  <div class="note-body">
+    <ul>
+      <li><strong>예제 6-11</strong>: 메서드에서 생략 규칙이 어떻게 적용되는지, 명시적으로 쓰면 어떻게 되는지</li>
+      <li><strong>예제 6-12</strong>: 라이프타임 <code>&#x27;a</code>, 제네릭 <code>T</code>, trait bound <code>T: Display</code>를 한 함수에 동시에 쓰는 패턴</li>
+    </ul>
+  </div>
+</div>
+  <div class="ex-label concept">예제 6-11: 메서드 라이프타임 — ImportantExcerpt</div>
+<div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_11')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_11','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s6_11">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// TRPL §10.3 — 메서드 라이프타임 생략 규칙</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="cm">// ImportantExcerpt: 메서드의 반환값 수명이 &amp;self를 따름</span></span></div>
+<div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">struct</span> <span class="tp">ImportantExcerpt</span>&lt;<span class="lf">&#x27;a</span>&gt; {</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line">    part: &amp;<span class="lf">&#x27;a</span> <span class="tp">str</span>,</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">impl</span>&lt;<span class="lf">&#x27;a</span>&gt; <span class="tp">ImportantExcerpt</span>&lt;<span class="lf">&#x27;a</span>&gt; {</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line"><span class="cm">    // 생략 규칙1: 입력 참조마다 별도 수명 부여</span></span></div>
+<div class="code-row"><span class="ln">9</span><span class="line"><span class="cm">    // 생략 규칙3: &amp;self 있음 → 반환값 수명 = self 수명</span></span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="kw">fn</span> <span class="fn">level</span>(&amp;<span class="kw">self</span>) -&gt; <span class="tp">i32</span> {</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">        3</span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">13</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">14</span><span class="line"><span class="cm">    // &amp;self + 추가 &amp;str → 규칙3 적용, 반환은 &amp;'a str</span></span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">    <span class="kw">fn</span> <span class="fn">announce_and_return_part</span>(&amp;<span class="kw">self</span>, announcement: &amp;<span class="tp">str</span>) -&gt; &amp;<span class="tp">str</span> {</span></div>
+<div class="code-row"><span class="ln">16</span><span class="line">        <span class="fn">println!</span>(<span class="st">"공지: {}"</span>, announcement);</span></div>
+<div class="code-row"><span class="ln">17</span><span class="line">        <span class="kw">self</span>.part  <span class="cm">// ← &amp;self 수명 'a 를 따름</span></span></div>
+<div class="code-row"><span class="ln">18</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">19</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">20</span><span class="line"><span class="cm">    // 명시적으로 쓰면 이렇게 됨:</span></span></div>
+<div class="code-row"><span class="ln">21</span><span class="line">    <span class="kw">fn</span> <span class="fn">announce_explicit</span>&lt;<span class="lf">&#x27;b</span>&gt;(&amp;<span class="lf">&#x27;a</span> <span class="kw">self</span>, ann: &amp;<span class="lf">&#x27;b</span> <span class="tp">str</span>) -&gt; &amp;<span class="lf">&#x27;a</span> <span class="tp">str</span> {</span></div>
+<div class="code-row"><span class="ln">22</span><span class="line">        <span class="fn">println!</span>(<span class="st">"공지(명시): {}"</span>, ann);</span></div>
+<div class="code-row"><span class="ln">23</span><span class="line">        <span class="kw">self</span>.part</span></div>
+<div class="code-row"><span class="ln">24</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">25</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">26</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">27</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div>
+<div class="code-row"><span class="ln">28</span><span class="line">    <span class="kw">let</span> novel = <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"오늘 아침..."</span>);</span></div>
+<div class="code-row"><span class="ln">29</span><span class="line">    <span class="kw">let</span> first = novel.<span class="fn">split</span>(<span class="st">'.'</span>).<span class="fn">next</span>().<span class="fn">unwrap</span>();</span></div>
+<div class="code-row"><span class="ln">30</span><span class="line">    <span class="kw">let</span> excerpt = <span class="tp">ImportantExcerpt</span> { part: first };</span></div>
+<div class="code-row"><span class="ln">31</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">32</span><span class="line">    <span class="fn">println!</span>(<span class="st">"level: {}"</span>, excerpt.<span class="fn">level</span>());</span></div>
+<div class="code-row"><span class="ln">33</span><span class="line">    <span class="kw">let</span> part = excerpt.<span class="fn">announce_and_return_part</span>(<span class="st">"중요 공지!"</span>);</span></div>
+<div class="code-row"><span class="ln">34</span><span class="line">    <span class="fn">println!</span>(<span class="st">"반환된 part: {}"</span>, part);</span></div>
+<div class="code-row"><span class="ln">35</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_11"></div>
+</div>
+
+  <br>
+  <div class="ex-label concept">예제 6-12: 제네릭 + trait bound + 라이프타임 — longest_with_ann</div>
+<div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_12')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_12','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s6_12">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// TRPL §10.3 — 제네릭 + trait bound + 라이프타임 동시 사용</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line"><span class="cm">// &lt;'a, T&gt;: 라이프타임과 제네릭 함께 선언</span></span></div>
+<div class="code-row"><span class="ln">3</span><span class="line"><span class="cm">// where T: Display: ann을 println! 하려면 Display 필요</span></span></div>
+<div class="code-row"><span class="ln">4</span><span class="line"><span class="kw">use</span> std::fmt;</span></div>
+<div class="code-row"><span class="ln">5</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line"><span class="kw">fn</span> <span class="fn">longest_with_ann</span>&lt;<span class="lf">&#x27;a</span>, T&gt;(</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    x:   &amp;<span class="lf">&#x27;a</span> <span class="tp">str</span>,</span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    y:   &amp;<span class="lf">&#x27;a</span> <span class="tp">str</span>,</span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    ann: T,</span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">) -&gt; &amp;<span class="lf">&#x27;a</span> <span class="tp">str</span></span></div>
+<div class="code-row"><span class="ln">11</span><span class="line"><span class="kw">where</span></span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">    T: fmt::<span class="tp">Display</span>,</span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">{</span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">    <span class="fn">println!</span>(<span class="st">"공지: {}"</span>, ann);</span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">    <span class="kw">if</span> x.<span class="fn">len</span>() &gt; y.<span class="fn">len</span>() { x } <span class="kw">else</span> { y }</span></div>
+<div class="code-row"><span class="ln">16</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">17</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">18</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div>
+<div class="code-row"><span class="ln">19</span><span class="line">    <span class="kw">let</span> s1 = <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"긴 문자열이에요"</span>);</span></div>
+<div class="code-row"><span class="ln">20</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">21</span><span class="line">        <span class="kw">let</span> s2 = <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"짧아"</span>);</span></div>
+<div class="code-row"><span class="ln">22</span><span class="line">        <span class="kw">let</span> result = <span class="fn">longest_with_ann</span>(&amp;s1, &amp;s2, <span class="st">"라이프타임 + 제네릭!"</span>);</span></div>
+<div class="code-row"><span class="ln">23</span><span class="line">        <span class="fn">println!</span>(<span class="st">"가장 긴 문자열: {}"</span>, result);</span></div>
+<div class="code-row"><span class="ln">24</span><span class="line"><span class="cm">        // result는 s2 수명에 묶여 이 블록 밖에서 사용 불가</span></span></div>
+<div class="code-row"><span class="ln">25</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">26</span><span class="line"><span class="cm">    // println!("{}", result); // ← 에러: s2가 이미 drop됨</span></span></div>
+<div class="code-row"><span class="ln">27</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_12"></div>
+</div>
+
+  <div class="note ok" style="margin-top:18px">
+  <div class="note-title">✅ 핵심 요약</div>
+  <div class="note-body">
+    <ul>
+      <li><strong>메서드 라이프타임</strong>: <code>&amp;self</code>가 있으면 반환값 수명은 자동으로 <code>self</code> 수명을 따름 (생략 규칙 3)</li>
+      <li><strong>제네릭 + 라이프타임</strong>: <code>&lt;&#x27;a, T&gt;</code>처럼 함께 선언, <code>where T: Display</code>로 trait bound 추가</li>
+      <li><code>ann: T</code>는 소유값 → 수명 어노테이션 불필요</li>
+    </ul>
+  </div>
 </div>
 
   <div class="note ok">
@@ -19179,6 +19286,7 @@ help: insert some indirection (e.g., a <span style="color:#4ec9b0;">Box</span>, 
       <tr><td><code>impl Drop for BorrowSession</code></td><td>RAII 자동 소멸자</td><td>s18</td></tr>
       <tr><td><code>normalize_title() → Cow&lt;str&gt;</code></td><td>Clone on Write</td><td>s18</td></tr>
       <tr><td><code>Rc&lt;RefCell&lt;Library&gt;&gt;</code></td><td>공유 소유권 + 내부 가변성</td><td>s18</td></tr>
+      <tr><td><code>Box&lt;dyn Describe&gt;</code></td><td>힙 할당 trait 객체 (스마트 포인터)</td><td>s18</td></tr>
     </tbody>
   </table>
 
@@ -19340,206 +19448,223 @@ help: insert some indirection (e.g., a <span style="color:#4ec9b0;">Box</span>, 
 <div class="code-row"><span class="ln">147</span><span class="line">    books:   <span class="tp">HashMap</span>&lt;<span class="tp">String</span>, <span class="tp">Book</span>&gt;,         <span class="cm">// 도서 목록 (s15)</span></span></div>
 <div class="code-row"><span class="ln">148</span><span class="line">    status:  <span class="tp">HashMap</span>&lt;<span class="tp">String</span>, <span class="tp">BookStatus</span>&gt;,   <span class="cm">// 대출 상태</span></span></div>
 <div class="code-row"><span class="ln">149</span><span class="line">    counts:  <span class="tp">HashMap</span>&lt;<span class="tp">String</span>, <span class="tp">u32</span>&gt;,          <span class="cm">// 사용자별 대출 수</span></span></div>
-<div class="code-row"><span class="ln">150</span><span class="line">}</span></div>
-<div class="code-row"><span class="ln">151</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">152</span><span class="line"><span class="kw">impl</span> <span class="tp">Library</span> {</span></div>
-<div class="code-row"><span class="ln">153</span><span class="line">    <span class="kw">fn</span> <span class="fn">new</span>() -&gt; <span class="kw">Self</span> {</span></div>
-<div class="code-row"><span class="ln">154</span><span class="line">        <span class="tp">Library</span> {</span></div>
-<div class="code-row"><span class="ln">155</span><span class="line">            books:  <span class="tp">HashMap</span>::<span class="fn">new</span>(),</span></div>
-<div class="code-row"><span class="ln">156</span><span class="line">            status: <span class="tp">HashMap</span>::<span class="fn">new</span>(),</span></div>
-<div class="code-row"><span class="ln">157</span><span class="line">            counts: <span class="tp">HashMap</span>::<span class="fn">new</span>(),</span></div>
-<div class="code-row"><span class="ln">158</span><span class="line">        }</span></div>
-<div class="code-row"><span class="ln">159</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">160</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">161</span><span class="line">    <span class="kw">fn</span> <span class="fn">add_book</span>(&amp;<span class="kw">mut</span> <span class="kw">self</span>, book: <span class="tp">Book</span>) {    <span class="cm">// &amp;mut self (s8)</span></span></div>
-<div class="code-row"><span class="ln">162</span><span class="line">        <span class="kw">let</span> title = book.title.<span class="fn">clone</span>();</span></div>
-<div class="code-row"><span class="ln">163</span><span class="line">        <span class="kw">self</span>.status.<span class="fn">insert</span>(title.<span class="fn">clone</span>(), <span class="tp">BookStatus</span>::Available);</span></div>
-<div class="code-row"><span class="ln">164</span><span class="line">        <span class="kw">self</span>.books.<span class="fn">insert</span>(title, book);</span></div>
-<div class="code-row"><span class="ln">165</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">166</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">167</span><span class="line">    <span class="cm">// ? 연산자로 에러 전파 (s12)</span></span></div>
-<div class="code-row"><span class="ln">168</span><span class="line">    <span class="kw">fn</span> <span class="fn">borrow_book</span>(</span></div>
-<div class="code-row"><span class="ln">169</span><span class="line">        &amp;<span class="kw">mut</span> <span class="kw">self</span>,</span></div>
-<div class="code-row"><span class="ln">170</span><span class="line">        title: &amp;<span class="tp">str</span>,</span></div>
-<div class="code-row"><span class="ln">171</span><span class="line">        user: &amp;<span class="tp">str</span>,</span></div>
-<div class="code-row"><span class="ln">172</span><span class="line">    ) -&gt; <span class="tp">Result</span>&lt;<span class="tp">BorrowSession</span>, <span class="tp">LibraryError</span>&gt; {</span></div>
-<div class="code-row"><span class="ln">173</span><span class="line">        <span class="cm">// Option → Result 변환 (s10, s11)</span></span></div>
-<div class="code-row"><span class="ln">174</span><span class="line">        <span class="kw">let</span> <span class="kw">_</span> = <span class="kw">self</span>.books.<span class="fn">get</span>(title)</span></div>
-<div class="code-row"><span class="ln">175</span><span class="line">            .<span class="fn">ok_or_else</span>(|| <span class="tp">LibraryError</span>::<span class="fn">NotFound</span>(title.<span class="fn">to_string</span>()))?;</span></div>
-<div class="code-row"><span class="ln">176</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">177</span><span class="line">        <span class="cm">// match로 상태 확인 (s9)</span></span></div>
-<div class="code-row"><span class="ln">178</span><span class="line">        <span class="kw">match</span> <span class="kw">self</span>.status.<span class="fn">get</span>(title) {</span></div>
-<div class="code-row"><span class="ln">179</span><span class="line">            <span class="tp">Some</span>(<span class="tp">BookStatus</span>::<span class="fn">Borrowed</span>(<span class="kw">_</span>)) =&gt;</span></div>
-<div class="code-row"><span class="ln">180</span><span class="line">                <span class="kw">return</span> <span class="tp">Err</span>(<span class="tp">LibraryError</span>::AlreadyBorrowed),</span></div>
-<div class="code-row"><span class="ln">181</span><span class="line">            <span class="kw">_</span> =&gt; {}</span></div>
-<div class="code-row"><span class="ln">182</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">150</span><span class="line">    featured: <span class="tp">Option</span>&lt;<span class="tp">Box</span>&lt;<span class="kw">dyn</span> <span class="tp">Describe</span>&gt;&gt;,  <span class="cm">// 힙 할당 trait 객체 (s18)</span></span></div>
+<div class="code-row"><span class="ln">151</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">152</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">153</span><span class="line"><span class="kw">impl</span> <span class="tp">Library</span> {</span></div>
+<div class="code-row"><span class="ln">154</span><span class="line">    <span class="kw">fn</span> <span class="fn">new</span>() -&gt; <span class="kw">Self</span> {</span></div>
+<div class="code-row"><span class="ln">155</span><span class="line">        <span class="tp">Library</span> {</span></div>
+<div class="code-row"><span class="ln">156</span><span class="line">            books:  <span class="tp">HashMap</span>::<span class="fn">new</span>(),</span></div>
+<div class="code-row"><span class="ln">157</span><span class="line">            status: <span class="tp">HashMap</span>::<span class="fn">new</span>(),</span></div>
+<div class="code-row"><span class="ln">158</span><span class="line">            counts: <span class="tp">HashMap</span>::<span class="fn">new</span>(),</span></div>
+<div class="code-row"><span class="ln">159</span><span class="line">            featured: <span class="tp">None</span>,  <span class="cm">// Box&lt;dyn Describe&gt; 초기값</span></span></div>
+<div class="code-row"><span class="ln">160</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">161</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">162</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">163</span><span class="line">    <span class="kw">fn</span> <span class="fn">add_book</span>(&amp;<span class="kw">mut</span> <span class="kw">self</span>, book: <span class="tp">Book</span>) {    <span class="cm">// &amp;mut self (s8)</span></span></div>
+<div class="code-row"><span class="ln">164</span><span class="line">        <span class="kw">let</span> title = book.title.<span class="fn">clone</span>();</span></div>
+<div class="code-row"><span class="ln">165</span><span class="line">        <span class="kw">self</span>.status.<span class="fn">insert</span>(title.<span class="fn">clone</span>(), <span class="tp">BookStatus</span>::Available);</span></div>
+<div class="code-row"><span class="ln">166</span><span class="line">        <span class="kw">self</span>.books.<span class="fn">insert</span>(title, book);</span></div>
+<div class="code-row"><span class="ln">167</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">168</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">169</span><span class="line">    <span class="cm">// ? 연산자로 에러 전파 (s12)</span></span></div>
+<div class="code-row"><span class="ln">170</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">171</span><span class="line">    <span class="cm">// Box&lt;dyn Describe&gt;: 어떤 Describe 구현체든 힙에 저장 (s18)</span></span></div>
+<div class="code-row"><span class="ln">172</span><span class="line">    <span class="kw">fn</span> <span class="fn">set_featured</span>(&amp;<span class="kw">mut self</span>, item: <span class="tp">Box</span>&lt;<span class="kw">dyn</span> <span class="tp">Describe</span>&gt;) {</span></div>
+<div class="code-row"><span class="ln">173</span><span class="line">        <span class="kw">self</span>.featured = <span class="tp">Some</span>(item);</span></div>
+<div class="code-row"><span class="ln">174</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">175</span><span class="line">    <span class="kw">fn</span> <span class="fn">borrow_book</span>(</span></div>
+<div class="code-row"><span class="ln">176</span><span class="line">        &amp;<span class="kw">mut</span> <span class="kw">self</span>,</span></div>
+<div class="code-row"><span class="ln">177</span><span class="line">        title: &amp;<span class="tp">str</span>,</span></div>
+<div class="code-row"><span class="ln">178</span><span class="line">        user: &amp;<span class="tp">str</span>,</span></div>
+<div class="code-row"><span class="ln">179</span><span class="line">    ) -&gt; <span class="tp">Result</span>&lt;<span class="tp">BorrowSession</span>, <span class="tp">LibraryError</span>&gt; {</span></div>
+<div class="code-row"><span class="ln">180</span><span class="line">        <span class="cm">// Option → Result 변환 (s10, s11)</span></span></div>
+<div class="code-row"><span class="ln">181</span><span class="line">        <span class="kw">let</span> <span class="kw">_</span> = <span class="kw">self</span>.books.<span class="fn">get</span>(title)</span></div>
+<div class="code-row"><span class="ln">182</span><span class="line">            .<span class="fn">ok_or_else</span>(|| <span class="tp">LibraryError</span>::<span class="fn">NotFound</span>(title.<span class="fn">to_string</span>()))?;</span></div>
 <div class="code-row"><span class="ln">183</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">184</span><span class="line">        <span class="cm">// 대출 한도 체크</span></span></div>
-<div class="code-row"><span class="ln">185</span><span class="line">        <span class="kw">let</span> count = <span class="kw">self</span>.counts.<span class="fn">entry</span>(user.<span class="fn">to_string</span>()).<span class="fn">or_insert</span>(<span class="nu">0</span>);</span></div>
-<div class="code-row"><span class="ln">186</span><span class="line">        <span class="kw">if</span> *count &gt;= MAX_BORROW {           <span class="cm">// 상수 활용 (s1)</span></span></div>
-<div class="code-row"><span class="ln">187</span><span class="line">            <span class="kw">return</span> <span class="tp">Err</span>(<span class="tp">LibraryError</span>::<span class="fn">LimitExceeded</span>(*count));</span></div>
-<div class="code-row"><span class="ln">188</span><span class="line">        }</span></div>
-<div class="code-row"><span class="ln">189</span><span class="line">        *count += <span class="nu">1</span>;</span></div>
+<div class="code-row"><span class="ln">184</span><span class="line">        <span class="cm">// match로 상태 확인 (s9)</span></span></div>
+<div class="code-row"><span class="ln">185</span><span class="line">        <span class="kw">match</span> <span class="kw">self</span>.status.<span class="fn">get</span>(title) {</span></div>
+<div class="code-row"><span class="ln">186</span><span class="line">            <span class="tp">Some</span>(<span class="tp">BookStatus</span>::<span class="fn">Borrowed</span>(<span class="kw">_</span>)) =&gt;</span></div>
+<div class="code-row"><span class="ln">187</span><span class="line">                <span class="kw">return</span> <span class="tp">Err</span>(<span class="tp">LibraryError</span>::AlreadyBorrowed),</span></div>
+<div class="code-row"><span class="ln">188</span><span class="line">            <span class="kw">_</span> =&gt; {}</span></div>
+<div class="code-row"><span class="ln">189</span><span class="line">        }</span></div>
 <div class="code-row"><span class="ln">190</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">191</span><span class="line">        <span class="kw">self</span>.status.<span class="fn">insert</span>(</span></div>
-<div class="code-row"><span class="ln">192</span><span class="line">            title.<span class="fn">to_string</span>(),</span></div>
-<div class="code-row"><span class="ln">193</span><span class="line">            <span class="tp">BookStatus</span>::<span class="fn">Borrowed</span>(user.<span class="fn">to_string</span>()),</span></div>
-<div class="code-row"><span class="ln">194</span><span class="line">        );</span></div>
-<div class="code-row"><span class="ln">195</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">196</span><span class="line">        <span class="cm">// Drop으로 세션 종료 자동 로그 (s18)</span></span></div>
-<div class="code-row"><span class="ln">197</span><span class="line">        <span class="tp">Ok</span>(<span class="tp">BorrowSession</span> {</span></div>
-<div class="code-row"><span class="ln">198</span><span class="line">            user: user.<span class="fn">to_string</span>(),</span></div>
-<div class="code-row"><span class="ln">199</span><span class="line">            title: title.<span class="fn">to_string</span>(),</span></div>
-<div class="code-row"><span class="ln">200</span><span class="line">        })</span></div>
-<div class="code-row"><span class="ln">201</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">191</span><span class="line">        <span class="cm">// 대출 한도 체크</span></span></div>
+<div class="code-row"><span class="ln">192</span><span class="line">        <span class="kw">let</span> count = <span class="kw">self</span>.counts.<span class="fn">entry</span>(user.<span class="fn">to_string</span>()).<span class="fn">or_insert</span>(<span class="nu">0</span>);</span></div>
+<div class="code-row"><span class="ln">193</span><span class="line">        <span class="kw">if</span> *count &gt;= MAX_BORROW {           <span class="cm">// 상수 활용 (s1)</span></span></div>
+<div class="code-row"><span class="ln">194</span><span class="line">            <span class="kw">return</span> <span class="tp">Err</span>(<span class="tp">LibraryError</span>::<span class="fn">LimitExceeded</span>(*count));</span></div>
+<div class="code-row"><span class="ln">195</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">196</span><span class="line">        *count += <span class="nu">1</span>;</span></div>
+<div class="code-row"><span class="ln">197</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">198</span><span class="line">        <span class="kw">self</span>.status.<span class="fn">insert</span>(</span></div>
+<div class="code-row"><span class="ln">199</span><span class="line">            title.<span class="fn">to_string</span>(),</span></div>
+<div class="code-row"><span class="ln">200</span><span class="line">            <span class="tp">BookStatus</span>::<span class="fn">Borrowed</span>(user.<span class="fn">to_string</span>()),</span></div>
+<div class="code-row"><span class="ln">201</span><span class="line">        );</span></div>
 <div class="code-row"><span class="ln">202</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">203</span><span class="line">    <span class="kw">fn</span> <span class="fn">return_book</span>(&amp;<span class="kw">mut</span> <span class="kw">self</span>, title: &amp;<span class="tp">str</span>, user: &amp;<span class="tp">str</span>) {</span></div>
-<div class="code-row"><span class="ln">204</span><span class="line">        <span class="kw">self</span>.status.<span class="fn">insert</span>(</span></div>
-<div class="code-row"><span class="ln">205</span><span class="line">            title.<span class="fn">to_string</span>(),</span></div>
-<div class="code-row"><span class="ln">206</span><span class="line">            <span class="tp">BookStatus</span>::Available,</span></div>
-<div class="code-row"><span class="ln">207</span><span class="line">        );</span></div>
-<div class="code-row"><span class="ln">208</span><span class="line">        <span class="kw">if</span> <span class="kw">let</span> <span class="tp">Some</span>(count) = <span class="kw">self</span>.counts.<span class="fn">get_mut</span>(user) {  <span class="cm">// if let (s9)</span></span></div>
-<div class="code-row"><span class="ln">209</span><span class="line">            *count -= <span class="nu">1</span>;</span></div>
-<div class="code-row"><span class="ln">210</span><span class="line">        }</span></div>
-<div class="code-row"><span class="ln">211</span><span class="line">        <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✓ &#x27;{}&#x27; 반납 완료&quot;</span>, title);</span></div>
-<div class="code-row"><span class="ln">212</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">213</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">214</span><span class="line">    <span class="cm">// Iterator 체이닝으로 검색 (s16)</span></span></div>
-<div class="code-row"><span class="ln">215</span><span class="line">    <span class="kw">fn</span> <span class="fn">available_books</span>(&amp;<span class="kw">self</span>) -&gt; <span class="tp">Vec</span>&lt;&amp;<span class="tp">Book</span>&gt; {</span></div>
-<div class="code-row"><span class="ln">216</span><span class="line">        <span class="kw">self</span>.books</span></div>
-<div class="code-row"><span class="ln">217</span><span class="line">            .<span class="fn">values</span>()</span></div>
-<div class="code-row"><span class="ln">218</span><span class="line">            .<span class="fn">filter</span>(|book| {</span></div>
-<div class="code-row"><span class="ln">219</span><span class="line">                <span class="fn">matches</span><span class="op">!</span>(                        <span class="cm">// matches! 매크로</span></span></div>
-<div class="code-row"><span class="ln">220</span><span class="line">                    <span class="kw">self</span>.status.<span class="fn">get</span>(&amp;book.title),</span></div>
-<div class="code-row"><span class="ln">221</span><span class="line">                    <span class="tp">Some</span>(<span class="tp">BookStatus</span>::Available)</span></div>
-<div class="code-row"><span class="ln">222</span><span class="line">                )</span></div>
-<div class="code-row"><span class="ln">223</span><span class="line">            })</span></div>
-<div class="code-row"><span class="ln">224</span><span class="line">            .<span class="fn">collect</span>()</span></div>
-<div class="code-row"><span class="ln">225</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">226</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">227</span><span class="line">    <span class="kw">fn</span> <span class="fn">borrowed_by</span>(&amp;<span class="kw">self</span>, user: &amp;<span class="tp">str</span>) -&gt; <span class="tp">Vec</span>&lt;&amp;<span class="tp">Book</span>&gt; {</span></div>
-<div class="code-row"><span class="ln">228</span><span class="line">        <span class="kw">self</span>.books</span></div>
-<div class="code-row"><span class="ln">229</span><span class="line">            .<span class="fn">values</span>()</span></div>
-<div class="code-row"><span class="ln">230</span><span class="line">            .<span class="fn">filter</span>(|book| {</span></div>
-<div class="code-row"><span class="ln">231</span><span class="line">                <span class="fn">matches</span><span class="op">!</span>(</span></div>
-<div class="code-row"><span class="ln">232</span><span class="line">                    <span class="kw">self</span>.status.<span class="fn">get</span>(&amp;book.title),</span></div>
-<div class="code-row"><span class="ln">233</span><span class="line">                    <span class="tp">Some</span>(<span class="tp">BookStatus</span>::<span class="fn">Borrowed</span>(u)) <span class="kw">if</span> u == user</span></div>
-<div class="code-row"><span class="ln">234</span><span class="line">                )</span></div>
-<div class="code-row"><span class="ln">235</span><span class="line">            })</span></div>
-<div class="code-row"><span class="ln">236</span><span class="line">            .<span class="fn">collect</span>()</span></div>
-<div class="code-row"><span class="ln">237</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">238</span><span class="line">}</span></div>
-<div class="code-row"><span class="ln">239</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">240</span><span class="line"><span class="cm">// ===== main =====</span></span></div>
-<div class="code-row"><span class="ln">241</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div>
-<div class="code-row"><span class="ln">242</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;=== 도서관 관리 시스템 ===\n&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">243</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">244</span><span class="line">    <span class="cm">// ① Rc&lt;RefCell&lt;T&gt;&gt; — 공유 소유권 + 내부 가변성 (s18)</span></span></div>
-<div class="code-row"><span class="ln">245</span><span class="line">    <span class="kw">let</span> library = <span class="tp">Rc</span>::<span class="fn">new</span>(<span class="tp">RefCell</span>::<span class="fn">new</span>(<span class="tp">Library</span>::<span class="fn">new</span>()));</span></div>
+<div class="code-row"><span class="ln">203</span><span class="line">        <span class="cm">// Drop으로 세션 종료 자동 로그 (s18)</span></span></div>
+<div class="code-row"><span class="ln">204</span><span class="line">        <span class="tp">Ok</span>(<span class="tp">BorrowSession</span> {</span></div>
+<div class="code-row"><span class="ln">205</span><span class="line">            user: user.<span class="fn">to_string</span>(),</span></div>
+<div class="code-row"><span class="ln">206</span><span class="line">            title: title.<span class="fn">to_string</span>(),</span></div>
+<div class="code-row"><span class="ln">207</span><span class="line">        })</span></div>
+<div class="code-row"><span class="ln">208</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">209</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">210</span><span class="line">    <span class="kw">fn</span> <span class="fn">return_book</span>(&amp;<span class="kw">mut</span> <span class="kw">self</span>, title: &amp;<span class="tp">str</span>, user: &amp;<span class="tp">str</span>) {</span></div>
+<div class="code-row"><span class="ln">211</span><span class="line">        <span class="kw">self</span>.status.<span class="fn">insert</span>(</span></div>
+<div class="code-row"><span class="ln">212</span><span class="line">            title.<span class="fn">to_string</span>(),</span></div>
+<div class="code-row"><span class="ln">213</span><span class="line">            <span class="tp">BookStatus</span>::Available,</span></div>
+<div class="code-row"><span class="ln">214</span><span class="line">        );</span></div>
+<div class="code-row"><span class="ln">215</span><span class="line">        <span class="kw">if</span> <span class="kw">let</span> <span class="tp">Some</span>(count) = <span class="kw">self</span>.counts.<span class="fn">get_mut</span>(user) {  <span class="cm">// if let (s9)</span></span></div>
+<div class="code-row"><span class="ln">216</span><span class="line">            *count -= <span class="nu">1</span>;</span></div>
+<div class="code-row"><span class="ln">217</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">218</span><span class="line">        <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✓ &#x27;{}&#x27; 반납 완료&quot;</span>, title);</span></div>
+<div class="code-row"><span class="ln">219</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">220</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">221</span><span class="line">    <span class="cm">// Iterator 체이닝으로 검색 (s16)</span></span></div>
+<div class="code-row"><span class="ln">222</span><span class="line">    <span class="kw">fn</span> <span class="fn">available_books</span>(&amp;<span class="kw">self</span>) -&gt; <span class="tp">Vec</span>&lt;&amp;<span class="tp">Book</span>&gt; {</span></div>
+<div class="code-row"><span class="ln">223</span><span class="line">        <span class="kw">self</span>.books</span></div>
+<div class="code-row"><span class="ln">224</span><span class="line">            .<span class="fn">values</span>()</span></div>
+<div class="code-row"><span class="ln">225</span><span class="line">            .<span class="fn">filter</span>(|book| {</span></div>
+<div class="code-row"><span class="ln">226</span><span class="line">                <span class="fn">matches</span><span class="op">!</span>(                        <span class="cm">// matches! 매크로</span></span></div>
+<div class="code-row"><span class="ln">227</span><span class="line">                    <span class="kw">self</span>.status.<span class="fn">get</span>(&amp;book.title),</span></div>
+<div class="code-row"><span class="ln">228</span><span class="line">                    <span class="tp">Some</span>(<span class="tp">BookStatus</span>::Available)</span></div>
+<div class="code-row"><span class="ln">229</span><span class="line">                )</span></div>
+<div class="code-row"><span class="ln">230</span><span class="line">            })</span></div>
+<div class="code-row"><span class="ln">231</span><span class="line">            .<span class="fn">collect</span>()</span></div>
+<div class="code-row"><span class="ln">232</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">233</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">234</span><span class="line">    <span class="kw">fn</span> <span class="fn">borrowed_by</span>(&amp;<span class="kw">self</span>, user: &amp;<span class="tp">str</span>) -&gt; <span class="tp">Vec</span>&lt;&amp;<span class="tp">Book</span>&gt; {</span></div>
+<div class="code-row"><span class="ln">235</span><span class="line">        <span class="kw">self</span>.books</span></div>
+<div class="code-row"><span class="ln">236</span><span class="line">            .<span class="fn">values</span>()</span></div>
+<div class="code-row"><span class="ln">237</span><span class="line">            .<span class="fn">filter</span>(|book| {</span></div>
+<div class="code-row"><span class="ln">238</span><span class="line">                <span class="fn">matches</span><span class="op">!</span>(</span></div>
+<div class="code-row"><span class="ln">239</span><span class="line">                    <span class="kw">self</span>.status.<span class="fn">get</span>(&amp;book.title),</span></div>
+<div class="code-row"><span class="ln">240</span><span class="line">                    <span class="tp">Some</span>(<span class="tp">BookStatus</span>::<span class="fn">Borrowed</span>(u)) <span class="kw">if</span> u == user</span></div>
+<div class="code-row"><span class="ln">241</span><span class="line">                )</span></div>
+<div class="code-row"><span class="ln">242</span><span class="line">            })</span></div>
+<div class="code-row"><span class="ln">243</span><span class="line">            .<span class="fn">collect</span>()</span></div>
+<div class="code-row"><span class="ln">244</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">245</span><span class="line">}</span></div>
 <div class="code-row"><span class="ln">246</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">247</span><span class="line">    <span class="cm">// ② 도서 등록 — Cow로 제목 정규화 (s18)</span></span></div>
-<div class="code-row"><span class="ln">248</span><span class="line">    {</span></div>
-<div class="code-row"><span class="ln">249</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> lib = library.<span class="fn">borrow_mut</span>();     <span class="cm">// RefCell 가변 빌림</span></span></div>
+<div class="code-row"><span class="ln">247</span><span class="line"><span class="cm">// ===== main =====</span></span></div>
+<div class="code-row"><span class="ln">248</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div>
+<div class="code-row"><span class="ln">249</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;=== 도서관 관리 시스템 ===\n&quot;</span>);</span></div>
 <div class="code-row"><span class="ln">250</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">251</span><span class="line">        <span class="kw">let</span> titles = [</span></div>
-<div class="code-row"><span class="ln">252</span><span class="line">            (<span class="st">&quot;the rust programming language&quot;</span>, <span class="st">&quot;Steve Klabnik&quot;</span>, <span class="nu">2019</span>),</span></div>
-<div class="code-row"><span class="ln">253</span><span class="line">            (<span class="st">&quot;Programming Rust&quot;</span>, <span class="st">&quot;Jim Blandy&quot;</span>, <span class="nu">2021</span>),</span></div>
-<div class="code-row"><span class="ln">254</span><span class="line">            (<span class="st">&quot;rust in action&quot;</span>, <span class="st">&quot;Tim McNamara&quot;</span>, <span class="nu">2021</span>),</span></div>
-<div class="code-row"><span class="ln">255</span><span class="line">        ];</span></div>
-<div class="code-row"><span class="ln">256</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">257</span><span class="line">        <span class="kw">for</span> (title, author, year) <span class="kw">in</span> &amp;titles {</span></div>
-<div class="code-row"><span class="ln">258</span><span class="line">            <span class="kw">let</span> normalized = <span class="fn">normalize_title</span>(title);    <span class="cm">// Cow&lt;str&gt;</span></span></div>
-<div class="code-row"><span class="ln">259</span><span class="line">            <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;제목 정규화: &#x27;{}&#x27; → &#x27;{}&#x27;&quot;</span>, title, normalized);</span></div>
-<div class="code-row"><span class="ln">260</span><span class="line">            lib.<span class="fn">add_book</span>(<span class="tp">Book</span>::<span class="fn">new</span>(&amp;normalized, author, *year));</span></div>
-<div class="code-row"><span class="ln">261</span><span class="line">        }</span></div>
-<div class="code-row"><span class="ln">262</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">251</span><span class="line">    <span class="cm">// ① Rc&lt;RefCell&lt;T&gt;&gt; — 공유 소유권 + 내부 가변성 (s18)</span></span></div>
+<div class="code-row"><span class="ln">252</span><span class="line">    <span class="kw">let</span> library = <span class="tp">Rc</span>::<span class="fn">new</span>(<span class="tp">RefCell</span>::<span class="fn">new</span>(<span class="tp">Library</span>::<span class="fn">new</span>()));</span></div>
+<div class="code-row"><span class="ln">253</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">254</span><span class="line">    <span class="cm">// ② 도서 등록 — Cow로 제목 정규화 (s18)</span></span></div>
+<div class="code-row"><span class="ln">255</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">256</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> lib = library.<span class="fn">borrow_mut</span>();     <span class="cm">// RefCell 가변 빌림</span></span></div>
+<div class="code-row"><span class="ln">257</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">258</span><span class="line">        <span class="kw">let</span> titles = [</span></div>
+<div class="code-row"><span class="ln">259</span><span class="line">            (<span class="st">&quot;the rust programming language&quot;</span>, <span class="st">&quot;Steve Klabnik&quot;</span>, <span class="nu">2019</span>),</span></div>
+<div class="code-row"><span class="ln">260</span><span class="line">            (<span class="st">&quot;Programming Rust&quot;</span>, <span class="st">&quot;Jim Blandy&quot;</span>, <span class="nu">2021</span>),</span></div>
+<div class="code-row"><span class="ln">261</span><span class="line">            (<span class="st">&quot;rust in action&quot;</span>, <span class="st">&quot;Tim McNamara&quot;</span>, <span class="nu">2021</span>),</span></div>
+<div class="code-row"><span class="ln">262</span><span class="line">        ];</span></div>
 <div class="code-row"><span class="ln">263</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">264</span><span class="line">    <span class="cm">// ③ 제네릭 카탈로그 검색 (s13, s16)</span></span></div>
-<div class="code-row"><span class="ln">265</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n--- 카탈로그 검색 ---&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">266</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> catalog: <span class="tp">Catalog</span>&lt;<span class="tp">Book</span>&gt; = <span class="tp">Catalog</span>::<span class="fn">new</span>();</span></div>
-<div class="code-row"><span class="ln">267</span><span class="line">    {</span></div>
-<div class="code-row"><span class="ln">268</span><span class="line">        <span class="kw">let</span> lib = library.<span class="fn">borrow</span>();</span></div>
-<div class="code-row"><span class="ln">269</span><span class="line">        <span class="kw">for</span> book <span class="kw">in</span> lib.books.<span class="fn">values</span>() {</span></div>
-<div class="code-row"><span class="ln">270</span><span class="line">            catalog.<span class="fn">add</span>(book.<span class="fn">clone</span>());          <span class="cm">// Clone (s8)</span></span></div>
-<div class="code-row"><span class="ln">271</span><span class="line">        }</span></div>
-<div class="code-row"><span class="ln">272</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">273</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;전체 도서 목록:&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">274</span><span class="line">    catalog.<span class="fn">print_all</span>();</span></div>
-<div class="code-row"><span class="ln">275</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;&#x27;rust&#x27; 검색 결과:&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">276</span><span class="line">    <span class="kw">for</span> book <span class="kw">in</span> catalog.<span class="fn">search</span>(<span class="st">&quot;rust&quot;</span>) {</span></div>
-<div class="code-row"><span class="ln">277</span><span class="line">        <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  → {}&quot;</span>, book.<span class="fn">describe</span>());   <span class="cm">// trait 메서드 (s14)</span></span></div>
-<div class="code-row"><span class="ln">278</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">279</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">280</span><span class="line">    <span class="cm">// ④ 대출 — ? 연산자 + Drop 자동 로그 (s12, s18)</span></span></div>
-<div class="code-row"><span class="ln">281</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n--- 대출 처리 ---&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">282</span><span class="line">    {</span></div>
-<div class="code-row"><span class="ln">283</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> lib = library.<span class="fn">borrow_mut</span>();</span></div>
-<div class="code-row"><span class="ln">284</span><span class="line">        <span class="kw">let</span> session = lib.<span class="fn">borrow_book</span>(</span></div>
-<div class="code-row"><span class="ln">285</span><span class="line">            <span class="st">&quot;THE RUST PROGRAMMING LANGUAGE&quot;</span>, <span class="st">&quot;Alice&quot;</span></span></div>
-<div class="code-row"><span class="ln">286</span><span class="line">        );</span></div>
-<div class="code-row"><span class="ln">287</span><span class="line">        <span class="kw">match</span> session {                         <span class="cm">// Result 처리 (s11)</span></span></div>
-<div class="code-row"><span class="ln">288</span><span class="line">            <span class="tp">Ok</span>(s) =&gt; {</span></div>
-<div class="code-row"><span class="ln">289</span><span class="line">                <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✓ 대출 성공: {}&quot;</span>, s.title);</span></div>
-<div class="code-row"><span class="ln">290</span><span class="line">                <span class="cm">// BorrowSession이 여기서 drop → 로그 출력 (s18)</span></span></div>
-<div class="code-row"><span class="ln">291</span><span class="line">            }</span></div>
-<div class="code-row"><span class="ln">292</span><span class="line">            <span class="tp">Err</span>(e) =&gt; <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✗ 대출 실패: {}&quot;</span>, e),</span></div>
-<div class="code-row"><span class="ln">293</span><span class="line">        }</span></div>
-<div class="code-row"><span class="ln">294</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">295</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">296</span><span class="line">    <span class="cm">// ⑤ 에러 케이스 확인 (s11, s12)</span></span></div>
-<div class="code-row"><span class="ln">297</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n--- 에러 케이스 ---&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">298</span><span class="line">    {</span></div>
-<div class="code-row"><span class="ln">299</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> lib = library.<span class="fn">borrow_mut</span>();</span></div>
-<div class="code-row"><span class="ln">300</span><span class="line">        <span class="cm">// 이미 대출된 책 재대출 시도</span></span></div>
-
-<div class="code-row"><span class="ln">302</span><span class="line">        <span class="kw">match</span> lib.<span class="fn">borrow_book</span>(<span class="st">&quot;THE RUST PROGRAMMING LANGUAGE&quot;</span>, <span class="st">&quot;Bob&quot;</span>) {</span></div>
-<div class="code-row"><span class="ln">303</span><span class="line">            <span class="tp">Ok</span>(<span class="kw">_</span>)  =&gt; <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✓ 대출 성공&quot;</span>),</span></div>
-<div class="code-row"><span class="ln">304</span><span class="line">            <span class="tp">Err</span>(e) =&gt; <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✗ 예상된 에러: {}&quot;</span>, e),</span></div>
-<div class="code-row"><span class="ln">305</span><span class="line">        }</span></div>
-<div class="code-row"><span class="ln">306</span><span class="line">        <span class="cm">// 없는 책 대출 시도</span></span></div>
-<div class="code-row"><span class="ln">307</span><span class="line">        <span class="kw">match</span> lib.<span class="fn">borrow_book</span>(<span class="st">&quot;없는 책&quot;</span>, <span class="st">&quot;Carol&quot;</span>) {</span></div>
-<div class="code-row"><span class="ln">308</span><span class="line">            <span class="tp">Ok</span>(<span class="kw">_</span>)  =&gt; {},</span></div>
-<div class="code-row"><span class="ln">309</span><span class="line">            <span class="tp">Err</span>(e) =&gt; <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✗ 예상된 에러: {}&quot;</span>, e),</span></div>
-<div class="code-row"><span class="ln">310</span><span class="line">        }</span></div>
-<div class="code-row"><span class="ln">311</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">312</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">313</span><span class="line">    <span class="cm">// ⑥ 라이프타임 — 빌린 책 참조 (s6)</span></span></div>
-<div class="code-row"><span class="ln">314</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n--- 대출 현황 ---&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">315</span><span class="line">    {</span></div>
-<div class="code-row"><span class="ln">316</span><span class="line">        <span class="kw">let</span> lib = library.<span class="fn">borrow</span>();</span></div>
-<div class="code-row"><span class="ln">317</span><span class="line">        <span class="kw">let</span> borrowed = lib.<span class="fn">borrowed_by</span>(<span class="st">&quot;Alice&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">318</span><span class="line">        <span class="kw">for</span> book <span class="kw">in</span> &amp;borrowed {</span></div>
-<div class="code-row"><span class="ln">319</span><span class="line">            <span class="kw">let</span> ref_info = <span class="tp">BookRef</span> {        <span class="cm">// 라이프타임 구조체 (s6)</span></span></div>
-<div class="code-row"><span class="ln">320</span><span class="line">                book,</span></div>
-<div class="code-row"><span class="ln">321</span><span class="line">                borrowed_by: <span class="st">&quot;Alice&quot;</span>,</span></div>
-<div class="code-row"><span class="ln">322</span><span class="line">            };</span></div>
-<div class="code-row"><span class="ln">323</span><span class="line">            <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  {}&quot;</span>, ref_info.<span class="fn">info</span>());</span></div>
-<div class="code-row"><span class="ln">324</span><span class="line">        }</span></div>
-<div class="code-row"><span class="ln">325</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">326</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">327</span><span class="line">    <span class="cm">// ⑦ 반납 후 대출 가능 목록 (s15, s16)</span></span></div>
-<div class="code-row"><span class="ln">328</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n--- 반납 처리 ---&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">329</span><span class="line">    {</span></div>
-<div class="code-row"><span class="ln">330</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> lib = library.<span class="fn">borrow_mut</span>();</span></div>
-<div class="code-row"><span class="ln">331</span><span class="line">        lib.<span class="fn">return_book</span>(<span class="st">&quot;THE RUST PROGRAMMING LANGUAGE&quot;</span>, <span class="st">&quot;Alice&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">332</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">333</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;대출 가능 도서:&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">334</span><span class="line">    {</span></div>
-<div class="code-row"><span class="ln">335</span><span class="line">        <span class="kw">let</span> lib = library.<span class="fn">borrow</span>();</span></div>
-<div class="code-row"><span class="ln">336</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> available = lib.<span class="fn">available_books</span>();</span></div>
-<div class="code-row"><span class="ln">337</span><span class="line">        available.<span class="fn">sort_by_key</span>(|b| b.year);     <span class="cm">// 클로저 정렬 (s16)</span></span></div>
-<div class="code-row"><span class="ln">338</span><span class="line">        <span class="kw">for</span> book <span class="kw">in</span> available {</span></div>
-<div class="code-row"><span class="ln">339</span><span class="line">            <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  · {}&quot;</span>, book.<span class="fn">describe</span>());</span></div>
-<div class="code-row"><span class="ln">340</span><span class="line">        }</span></div>
-<div class="code-row"><span class="ln">341</span><span class="line">    }</span></div>
-<div class="code-row"><span class="ln">342</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">343</span><span class="line">    <span class="cm">// ⑧ Rc 참조 카운트 확인 (s18)</span></span></div>
-<div class="code-row"><span class="ln">344</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\nRc 참조 카운트: {}&quot;</span>, <span class="tp">Rc</span>::<span class="fn">strong_count</span>(&amp;library));</span></div>
-<div class="code-row"><span class="ln">345</span><span class="line"></span></div>
-<div class="code-row"><span class="ln">346</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n=== 완료 ===&quot;</span>);</span></div>
-<div class="code-row"><span class="ln">347</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">264</span><span class="line">        <span class="kw">for</span> (title, author, year) <span class="kw">in</span> &amp;titles {</span></div>
+<div class="code-row"><span class="ln">265</span><span class="line">            <span class="kw">let</span> normalized = <span class="fn">normalize_title</span>(title);    <span class="cm">// Cow&lt;str&gt;</span></span></div>
+<div class="code-row"><span class="ln">266</span><span class="line">            <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;제목 정규화: &#x27;{}&#x27; → &#x27;{}&#x27;&quot;</span>, title, normalized);</span></div>
+<div class="code-row"><span class="ln">267</span><span class="line">            lib.<span class="fn">add_book</span>(<span class="tp">Book</span>::<span class="fn">new</span>(&amp;normalized, author, *year));</span></div>
+<div class="code-row"><span class="ln">268</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">269</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">270</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">271</span><span class="line">    <span class="cm">// ③ 제네릭 카탈로그 검색 (s13, s16)</span></span></div>
+<div class="code-row"><span class="ln">272</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n--- 카탈로그 검색 ---&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">273</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> catalog: <span class="tp">Catalog</span>&lt;<span class="tp">Book</span>&gt; = <span class="tp">Catalog</span>::<span class="fn">new</span>();</span></div>
+<div class="code-row"><span class="ln">274</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">275</span><span class="line">        <span class="kw">let</span> lib = library.<span class="fn">borrow</span>();</span></div>
+<div class="code-row"><span class="ln">276</span><span class="line">        <span class="kw">for</span> book <span class="kw">in</span> lib.books.<span class="fn">values</span>() {</span></div>
+<div class="code-row"><span class="ln">277</span><span class="line">            catalog.<span class="fn">add</span>(book.<span class="fn">clone</span>());          <span class="cm">// Clone (s8)</span></span></div>
+<div class="code-row"><span class="ln">278</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">279</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">280</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;전체 도서 목록:&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">281</span><span class="line">    catalog.<span class="fn">print_all</span>();</span></div>
+<div class="code-row"><span class="ln">282</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;&#x27;rust&#x27; 검색 결과:&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">283</span><span class="line">    <span class="kw">for</span> book <span class="kw">in</span> catalog.<span class="fn">search</span>(<span class="st">&quot;rust&quot;</span>) {</span></div>
+<div class="code-row"><span class="ln">284</span><span class="line">        <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  → {}&quot;</span>, book.<span class="fn">describe</span>());   <span class="cm">// trait 메서드 (s14)</span></span></div>
+<div class="code-row"><span class="ln">285</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">286</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">287</span><span class="line">    <span class="cm">// ④ 대출 — ? 연산자 + Drop 자동 로그 (s12, s18)</span></span></div>
+<div class="code-row"><span class="ln">288</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n--- 대출 처리 ---&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">289</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">290</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> lib = library.<span class="fn">borrow_mut</span>();</span></div>
+<div class="code-row"><span class="ln">291</span><span class="line">        <span class="kw">let</span> session = lib.<span class="fn">borrow_book</span>(</span></div>
+<div class="code-row"><span class="ln">292</span><span class="line">            <span class="st">&quot;THE RUST PROGRAMMING LANGUAGE&quot;</span>, <span class="st">&quot;Alice&quot;</span></span></div>
+<div class="code-row"><span class="ln">293</span><span class="line">        );</span></div>
+<div class="code-row"><span class="ln">294</span><span class="line">        <span class="kw">match</span> session {                         <span class="cm">// Result 처리 (s11)</span></span></div>
+<div class="code-row"><span class="ln">295</span><span class="line">            <span class="tp">Ok</span>(s) =&gt; {</span></div>
+<div class="code-row"><span class="ln">296</span><span class="line">                <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✓ 대출 성공: {}&quot;</span>, s.title);</span></div>
+<div class="code-row"><span class="ln">297</span><span class="line">                <span class="cm">// BorrowSession이 여기서 drop → 로그 출력 (s18)</span></span></div>
+<div class="code-row"><span class="ln">298</span><span class="line">            }</span></div>
+<div class="code-row"><span class="ln">299</span><span class="line">            <span class="tp">Err</span>(e) =&gt; <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✗ 대출 실패: {}&quot;</span>, e),</span></div>
+<div class="code-row"><span class="ln">300</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">301</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">302</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">303</span><span class="line">    <span class="cm">// ⑤ 에러 케이스 확인 (s11, s12)</span></span></div>
+<div class="code-row"><span class="ln">304</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n--- 에러 케이스 ---&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">305</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">306</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> lib = library.<span class="fn">borrow_mut</span>();</span></div>
+<div class="code-row"><span class="ln">307</span><span class="line">        <span class="cm">// 이미 대출된 책 재대출 시도</span></span></div>
+<div class="code-row"><span class="ln">308</span><span class="line">        <span class="kw">match</span> lib.<span class="fn">borrow_book</span>(<span class="st">&quot;THE RUST PROGRAMMING LANGUAGE&quot;</span>, <span class="st">&quot;Bob&quot;</span>) {</span></div>
+<div class="code-row"><span class="ln">309</span><span class="line">            <span class="tp">Ok</span>(<span class="kw">_</span>)  =&gt; <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✓ 대출 성공&quot;</span>),</span></div>
+<div class="code-row"><span class="ln">310</span><span class="line">            <span class="tp">Err</span>(e) =&gt; <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✗ 예상된 에러: {}&quot;</span>, e),</span></div>
+<div class="code-row"><span class="ln">311</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">312</span><span class="line">        <span class="cm">// 없는 책 대출 시도</span></span></div>
+<div class="code-row"><span class="ln">313</span><span class="line">        <span class="kw">match</span> lib.<span class="fn">borrow_book</span>(<span class="st">&quot;없는 책&quot;</span>, <span class="st">&quot;Carol&quot;</span>) {</span></div>
+<div class="code-row"><span class="ln">314</span><span class="line">            <span class="tp">Ok</span>(<span class="kw">_</span>)  =&gt; {},</span></div>
+<div class="code-row"><span class="ln">315</span><span class="line">            <span class="tp">Err</span>(e) =&gt; <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  ✗ 예상된 에러: {}&quot;</span>, e),</span></div>
+<div class="code-row"><span class="ln">316</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">317</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">318</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">319</span><span class="line">    <span class="cm">// ⑥ 라이프타임 — 빌린 책 참조 (s6)</span></span></div>
+<div class="code-row"><span class="ln">320</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n--- 대출 현황 ---&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">321</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">322</span><span class="line">        <span class="kw">let</span> lib = library.<span class="fn">borrow</span>();</span></div>
+<div class="code-row"><span class="ln">323</span><span class="line">        <span class="kw">let</span> borrowed = lib.<span class="fn">borrowed_by</span>(<span class="st">&quot;Alice&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">324</span><span class="line">        <span class="kw">for</span> book <span class="kw">in</span> &amp;borrowed {</span></div>
+<div class="code-row"><span class="ln">325</span><span class="line">            <span class="kw">let</span> ref_info = <span class="tp">BookRef</span> {        <span class="cm">// 라이프타임 구조체 (s6)</span></span></div>
+<div class="code-row"><span class="ln">326</span><span class="line">                book,</span></div>
+<div class="code-row"><span class="ln">327</span><span class="line">                borrowed_by: <span class="st">&quot;Alice&quot;</span>,</span></div>
+<div class="code-row"><span class="ln">328</span><span class="line">            };</span></div>
+<div class="code-row"><span class="ln">329</span><span class="line">            <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  {}&quot;</span>, ref_info.<span class="fn">info</span>());</span></div>
+<div class="code-row"><span class="ln">330</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">331</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">332</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">333</span><span class="line">    <span class="cm">// ⑦ 반납 후 대출 가능 목록 (s15, s16)</span></span></div>
+<div class="code-row"><span class="ln">334</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n--- 반납 처리 ---&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">335</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">336</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> lib = library.<span class="fn">borrow_mut</span>();</span></div>
+<div class="code-row"><span class="ln">337</span><span class="line">        lib.<span class="fn">return_book</span>(<span class="st">&quot;THE RUST PROGRAMMING LANGUAGE&quot;</span>, <span class="st">&quot;Alice&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">338</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">339</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;대출 가능 도서:&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">340</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">341</span><span class="line">        <span class="kw">let</span> lib = library.<span class="fn">borrow</span>();</span></div>
+<div class="code-row"><span class="ln">342</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> available = lib.<span class="fn">available_books</span>();</span></div>
+<div class="code-row"><span class="ln">343</span><span class="line">        available.<span class="fn">sort_by_key</span>(|b| b.year);     <span class="cm">// 클로저 정렬 (s16)</span></span></div>
+<div class="code-row"><span class="ln">344</span><span class="line">        <span class="kw">for</span> book <span class="kw">in</span> available {</span></div>
+<div class="code-row"><span class="ln">345</span><span class="line">            <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;  · {}&quot;</span>, book.<span class="fn">describe</span>());</span></div>
+<div class="code-row"><span class="ln">346</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">347</span><span class="line">    }</span></div>
 <div class="code-row"><span class="ln">348</span><span class="line"></span></div>
-</div>
+<div class="code-row"><span class="ln">349</span><span class="line">    <span class="cm">// ⑨ Box&lt;dyn Describe&gt; — 힙 할당 trait 객체 (s18)</span></span></div>
+<div class="code-row"><span class="ln">350</span><span class="line">    {</span></div>
+<div class="code-row"><span class="ln">351</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> lib = library.<span class="fn">borrow_mut</span>();</span></div>
+<div class="code-row"><span class="ln">352</span><span class="line">        <span class="kw">let</span> featured: <span class="tp">Box</span>&lt;<span class="kw">dyn</span> <span class="tp">Describe</span>&gt; = <span class="tp">Box</span>::<span class="fn">new</span>(</span></div>
+<div class="code-row"><span class="ln">353</span><span class="line">            <span class="tp">Book</span>::<span class="fn">new</span>(<span class="st">&quot;Programming Rust&quot;</span>, <span class="st">&quot;Jim Blandy&quot;</span>, <span class="nm">2021</span>)</span></div>
+<div class="code-row"><span class="ln">354</span><span class="line">        );</span></div>
+<div class="code-row"><span class="ln">355</span><span class="line">        lib.<span class="fn">set_featured</span>(featured);</span></div>
+<div class="code-row"><span class="ln">356</span><span class="line">        <span class="kw">if</span> <span class="kw">let</span> <span class="tp">Some</span>(book) = &amp;lib.featured {</span></div>
+<div class="code-row"><span class="ln">357</span><span class="line">            <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n추천 도서: {}&quot;</span>, book.<span class="fn">describe</span>());</span></div>
+<div class="code-row"><span class="ln">358</span><span class="line">        }</span></div>
+<div class="code-row"><span class="ln">359</span><span class="line">    }</span></div>
+<div class="code-row"><span class="ln">360</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">361</span><span class="line">    <span class="cm">// ⑧ Rc 참조 카운트 확인 (s18)</span></span></div>
+<div class="code-row"><span class="ln">362</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\nRc 참조 카운트: {}&quot;</span>, <span class="tp">Rc</span>::<span class="fn">strong_count</span>(&amp;library));</span></div>
+<div class="code-row"><span class="ln">363</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">364</span><span class="line">    <span class="fn">println</span><span class="op">!</span>(<span class="st">&quot;\n=== 완료 ===&quot;</span>);</span></div>
+<div class="code-row"><span class="ln">365</span><span class="line">}</span></div>
+<div class="code-row"><span class="ln">366</span><span class="line"></span></div>
 <div class="run-output" id="out_r_s20_full"></div>
 </div>
 
