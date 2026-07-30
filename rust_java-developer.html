@@ -80,6 +80,11 @@ main{margin-left:236px;flex:1;padding:84px 44px 100px;max-width:1140px}
 .page-subtitle a{color:var(--ac);text-decoration:none}
 /* 섹션 */
 section{margin-bottom:64px;scroll-margin-top:24px}
+/* 대용량 문서 렌더링 최적화: 화면 밖 섹션은 렌더 계산을 건너뛰어 스크롤/실행 시 끊김을 줄인다.
+   auto가 한 번 렌더된 크기를 기억해 스크롤바가 튀지 않는다. 인쇄에는 적용하지 않는다. */
+@media screen{
+  section[id]{content-visibility:auto;contain-intrinsic-size:auto 1200px}
+}
 .sec-header{
   display:flex;align-items:center;gap:12px;
   margin-bottom:16px;border-bottom:2px solid var(--bd);padding-bottom:10px;
@@ -255,6 +260,8 @@ tbody tr:hover td{background:var(--bg2)}
 .run-btn{background:#0e4429;border:1px solid #238636;color:#3fb950;font-size:11px;padding:3px 10px;border-radius:4px;cursor:pointer;font-family:'Consolas',monospace}
 .run-btn:hover{background:#4ade80;color:#111;}
 .run-btn:disabled{opacity:.5;cursor:not-allowed;}
+.pg-btn{background:#0d3a4a;border:1px solid #38bdf8;color:#7dd3fc;font-size:11px;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:'Consolas',monospace}
+.pg-btn:hover{background:#38bdf8;color:#04222e}
 /* 실행 결과 출력 영역 */
 .run-output{background:#0d1117;color:#3fb950;font-family:'Consolas',monospace;font-size:12px;padding:10px 14px;white-space:pre-wrap;border-top:1px solid #238636;display:none}
 .run-output.show{display:block}
@@ -6380,7 +6387,7 @@ function cp(id){
   var el=document.getElementById(id);if(!el) return;
   var clone=el.cloneNode(true);
   clone.querySelectorAll('.ln').forEach(function(s){s.remove();});
-  var text=clone.innerText||clone.textContent;
+  var text=clone.textContent;
   if(navigator.clipboard){
     navigator.clipboard.writeText(text).catch(function(){});
   } else {
@@ -6398,6 +6405,82 @@ function cp(id){
   });
 }
 
+// Wandbox 컴파일러를 런타임에 조회한다. 특정 버전을 하드코딩하면 Wandbox가 구버전을 삭제할 때
+// 실행이 깨지므로, list.json에서 언어별로 사용 가능한 최신 버전을 찾아 쓰고 한 번 조회하면 캐시한다.
+let _wbList = null;
+async function resolveCompiler(lang) {
+  const fallback = lang === 'java' ? 'openjdk-jdk-22+36'
+                 : lang === 'go'   ? 'go-1.23.2'
+                 : lang === 'cpp'  ? 'gcc-13.2.0'
+                 : 'rust-1.82.0';
+  if (_wbList === null) {
+    try {
+      const r = await fetch('https://wandbox.org/api/list.json');
+      _wbList = r.ok ? await r.json() : false;
+    } catch (e) { _wbList = false; }
+  }
+  if (!Array.isArray(_wbList)) return fallback;
+  let isLang, prefer;
+  if (lang === 'java')      { isLang = c => c.language === 'Java' || /openjdk|(^|-)jdk/i.test(c.name || ''); }
+  else if (lang === 'go')   { isLang = c => c.language === 'Go'   || /^go-/i.test(c.name || ''); }
+  else if (lang === 'cpp')  { isLang = c => c.language === 'C++'; prefer = c => /^gcc-/i.test(c.name || ''); } // gcc 우선(-std=c++17 유지)
+  else                      { isLang = c => c.language === 'Rust' || /^rustc?-/i.test(c.name || ''); }
+  let cands = _wbList.filter(c => c && isLang(c));
+  if (prefer && cands.some(prefer)) cands = cands.filter(prefer);
+  if (!cands.length) return fallback;
+  const ver = n => { const m = (n || '').match(/(\d+)\.(\d+)(?:\.(\d+))?/); return m ? [(+m[1]||0),(+m[2]||0),(+m[3]||0)] : null; };
+  const numbered = cands.filter(c => ver(c.name));
+  if (numbered.length) {
+    numbered.sort((a, b) => { const va = ver(a.name), vb = ver(b.name); for (let i = 0; i < 3; i++) { if (vb[i] !== va[i]) return vb[i] - va[i]; } return 0; });
+    return numbered[0].name;
+  }
+  const head = cands.find(c => /head/i.test(c.name));
+  return head ? head.name : cands[0].name;
+}
+
+// Wandbox 실행 실패 시 Rust 코드를 Rust Playground에서 연다.
+// 반드시 사용자 클릭(제스처) 안에서 호출해야 window.open이 팝업 차단에 막히지 않는다.
+// edition 미지정 시 Playground가 레거시 호환으로 Rust 2015를 강제하므로 edition=2021을 반드시 지정한다.
+function openInPlayground(code) {
+  var enc = encodeURIComponent(code);
+  var base = 'https://play.rust-lang.org/?version=stable&mode=debug&edition=2021';
+  if (enc.length > 6000) {
+    // 코드가 너무 길어 URL에 못 실을 때만 클립보드 사용. window.open 전에(포커스 있을 때) 복사해야 file://에서 권한 팝업이 안 뜬다.
+    if (navigator.clipboard) { navigator.clipboard.writeText(code).catch(function(){}); }
+    window.open(base, '_blank', 'noopener');
+  } else {
+    // 일반적인 경우: 코드를 URL에 실어 그대로 채워서 연다. 클립보드는 건드리지 않는다(권한 팝업 방지).
+    window.open(base + '&code=' + enc, '_blank', 'noopener');
+  }
+}
+
+// 실행 실패 메시지 출력. Rust인 경우 Playground로 넘어가는 버튼을 함께 표시한다.
+function renderRunFailure(outDiv, headerText, lang, code) {
+  outDiv.className = 'run-output show err';
+  outDiv.textContent = '';
+  var msg = document.createElement('div');
+  msg.style.whiteSpace = 'pre-wrap';
+  msg.textContent = headerText;
+  outDiv.appendChild(msg);
+  if (lang === 'rust') {
+    var row = document.createElement('div');
+    row.style.marginTop = '10px';
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pg-btn';
+    b.textContent = '▷ Rust Playground에서 열기';
+    b.onclick = function(){ openInPlayground(code); };
+    row.appendChild(b);
+    var hint = document.createElement('div');
+    hint.style.cssText = 'margin-top:6px;font-size:11px;color:#9aa0a6';
+    hint.textContent = (encodeURIComponent(code).length > 6000)
+      ? '코드가 길어 빈 Rust Playground가 열립니다. Ctrl+V로 붙여넣으세요(코드는 클립보드에 복사됩니다).'
+      : '새 탭에 코드가 채워진 Rust Playground가 열립니다.';
+    row.appendChild(hint);
+    outDiv.appendChild(row);
+  }
+}
+
 // ── Piston API 코드 실행 ──────────────────────────────
 async function runCode(blockId, lang) {
   const pre = document.getElementById(blockId);
@@ -6406,7 +6489,7 @@ async function runCode(blockId, lang) {
   if (!pre || !outDiv) return;
 
   // 코드 추출 (span 태그 제거, HTML 엔티티 디코드)
-  let code = pre.innerText || pre.textContent;
+  let code = pre.textContent;
   // 줄번호 제거
   code = code.replace(/^[ \t]*\d{1,3}(?=\D)/gm, '').replace(/^[ \t]*\d{1,3}$/gm, '');
   // HTML 엔티티 디코드
@@ -6416,11 +6499,8 @@ async function runCode(blockId, lang) {
   // {{}} → {} (Rust 포맷 이스케이프 복원)
   if (lang === 'rust') code = code.replace(/\{\{\}\}/g, '{}').replace(/\{\{/g, '{').replace(/\}\}/g, '}');
 
-  // Wandbox 컴파일러 선택
-  const compiler = lang === 'java' ? 'openjdk-jdk-22+36'
-             : lang === 'go'   ? 'go-1.23.2'
-             : lang === 'cpp'  ? 'gcc-13.2.0'
-             : 'rust-1.82.0';
+  // Wandbox 컴파일러 선택 (런타임 조회 — 버전 만료 대비)
+  const compiler = await resolveCompiler(lang);
 
   // UI 상태
   btn.disabled = true;
@@ -6428,11 +6508,8 @@ async function runCode(blockId, lang) {
   outDiv.className = 'run-output show loading';
   outDiv.textContent = '⏳ 원격 컴파일 중... (Wandbox)';
 
-  try {
-    const res = await fetch('https://wandbox.org/api/compile.json', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(
+  // 요청 body는 한 번만 구성한다(재시도 시 재사용).
+  const reqBody = JSON.stringify(
         lang === 'java'
           ? (() => {
               let fixedCode = code;
@@ -6472,7 +6549,7 @@ async function runCode(blockId, lang) {
             })()
           : lang === 'go' ? (() => {
               // Go: package main + import 구조 그대로 전송
-              return { compiler: 'go-1.23.2', code: code, save: false };
+              return { compiler: compiler, code: code, save: false };
             })()
           : lang === 'cpp' ? (() => {
               return { compiler: compiler, code: code, save: false,
@@ -6497,35 +6574,57 @@ async function runCode(blockId, lang) {
               }
               return { compiler: compiler, code: fixedCode, save: false };
             })()
-      )
-    });
+  );
 
-    if (!res.ok) throw new Error('API 응답 오류: ' + res.status);
-    const data = await res.json();
+  // Wandbox가 서버 자원 부족 시 내는 일시적 오류(crun/OCI/EAGAIN 등)는 재시도하면 대개 성공한다.
+  const TRANSIENT = /Resource temporarily unavailable|OCI runtime|crun:|failed to (?:create|run|start)|EAGAIN|Cannot allocate|try again|Too many/i;
+  const MAX_TRIES = 3;
+  const isOnlyWarning = (s) => s.trim().length > 0 && !s.includes('error[') && !s.includes('error:') && s.includes('warning');
 
-    // Wandbox 응답: status(종료코드), compiler_error, program_output, program_error
-    const compileErr = (data.compiler_error || '').trim();
-    const output     = (data.program_output || '').trim();
-    const progErr    = (data.program_error  || '').trim();
-    const exitCode   = data.status;
+  try {
+    for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
+      if (attempt > 1) {
+        outDiv.className = 'run-output show loading';
+        outDiv.textContent = '⏳ Wandbox 서버 혼잡 — 재시도 중 (' + attempt + '/' + MAX_TRIES + ')...';
+        await new Promise(function(r){ setTimeout(r, 700 * (attempt - 1)); });
+      }
+      const res = await fetch('https://wandbox.org/api/compile.json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: reqBody
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(function(){return '';});
+        if (res.status >= 500 && attempt < MAX_TRIES) continue;
+        throw new Error('API 응답 오류 ' + res.status + ' (compiler=' + compiler + ')' + (t ? ' — ' + t.slice(0,200) : ''));
+      }
+      const data = await res.json();
 
-    // warning만 있는 경우 에러 아님
-    const isOnlyWarning = (s) => s.trim().length > 0 && !s.includes('error[') && !s.includes('error:') && s.includes('warning');
+      // Wandbox 응답: status(종료코드), compiler_error, program_output, program_error
+      const compileErr = (data.compiler_error || '').trim();
+      const output     = (data.program_output || '').trim();
+      const progErr    = (data.program_error  || '').trim();
+      const exitCode   = data.status;
+      const infra = TRANSIENT.test(compileErr) || TRANSIENT.test(progErr);
+      if (infra && attempt < MAX_TRIES) continue;   // 일시적 서버 오류 → 재시도
 
-    if (compileErr && !isOnlyWarning(compileErr)) {
-      outDiv.className = 'run-output show err';
-      outDiv.textContent = '🔴 컴파일 에러:\n' + compileErr;
-    } else if (exitCode !== 0 && progErr && !isOnlyWarning(progErr)) {
-      outDiv.className = 'run-output show err';
-      outDiv.textContent = '🔴 런타임 에러:\n' + progErr;
-    } else {
-      outDiv.className = 'run-output show ok';
-      const warn = (isOnlyWarning(compileErr) ? '⚠️ 경고 있음 (실행은 정상)\n' : '');
-      outDiv.textContent = '🟢 출력:\n' + (output || '(출력 없음)') + (warn ? '\n\n' + warn : '');
+      if (infra) {
+        renderRunFailure(outDiv, '🟠 Wandbox 서버 오류 (일시적):\n' + (compileErr || progErr) + '\n\nWandbox 서버 자원이 부족한 상태입니다. 코드 문제가 아니니 잠시 후 다시 실행해 주세요.', lang, code);
+      } else if (compileErr && !isOnlyWarning(compileErr)) {
+        outDiv.className = 'run-output show err';
+        outDiv.textContent = '🔴 컴파일 에러:\n' + compileErr;
+      } else if (exitCode !== 0 && progErr && !isOnlyWarning(progErr)) {
+        outDiv.className = 'run-output show err';
+        outDiv.textContent = '🔴 런타임 에러:\n' + progErr;
+      } else {
+        outDiv.className = 'run-output show ok';
+        const warn = (isOnlyWarning(compileErr) ? '⚠️ 경고 있음 (실행은 정상)\n' : '');
+        outDiv.textContent = '🟢 출력:\n' + (output || '(출력 없음)') + (warn ? '\n\n' + warn : '');
+      }
+      break;
     }
   } catch (e) {
-    outDiv.className = 'run-output show err';
-    outDiv.textContent = '🔴 네트워크 오류: ' + e.message;
+    renderRunFailure(outDiv, '🔴 네트워크 오류: ' + e.message + '\n\nWandbox에 연결하지 못했습니다.', lang, code);
   } finally {
     btn.disabled = false;
     btn.textContent = '▷ 실행';
