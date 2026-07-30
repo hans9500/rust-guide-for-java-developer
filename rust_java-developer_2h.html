@@ -87,6 +87,12 @@ main{margin-left:260px;flex:1;padding:56px 56px 120px;max-width:1060px}
 
 /* 섹션 */
 section{margin-bottom:72px;scroll-margin-top:24px}
+/* 대용량 문서(2.3MB) 렌더링 최적화: 화면 밖 섹션은 렌더 트리 계산을 건너뛰어
+   스크롤/실행 버튼 클릭 시 발생하던 끊김(jank)을 줄인다. auto 키워드가 한 번 렌더된
+   크기를 기억하므로 스크롤바가 튀지 않는다. 인쇄(@media print)에는 적용하지 않는다. */
+@media screen{
+  section[id]{content-visibility:auto;contain-intrinsic-size:auto 1200px}
+}
 .sec-header{display:flex;align-items:center;gap:14px;margin-bottom:18px;border-bottom:2px solid var(--bd);padding-bottom:12px}
 .sec-time{
   display:inline-flex;align-items:center;justify-content:center;
@@ -123,6 +129,8 @@ strong{color:var(--tx1);font-weight:700}
 .run-btn{background:#0e4429;border:1px solid #238636;color:#3fb950;font-size:11px;padding:3px 10px;border-radius:4px;cursor:pointer;font-family:'Consolas',monospace}
 .run-btn:hover{background:#238636;color:#fff}
 .run-btn:disabled{opacity:.5;cursor:not-allowed}
+.pg-btn{background:#0d3a4a;border:1px solid #38bdf8;color:#7dd3fc;font-size:11px;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:'Consolas',monospace}
+.pg-btn:hover{background:#38bdf8;color:#04222e}
 
 /* VS Code 스타일: 가로 스크롤 + 고정 라인번호 */
 .vp{
@@ -1055,8 +1063,9 @@ blockquote.official-quote .ko-mem strong { color: #4ec9b0; }
   <div class="note info">
     <div class="note-title">💡 참고</div>
     <div class="note-body">
-      이 가이드는 Wandbox의 <code>rust-1.82.0</code>과 <code>openjdk-22</code> 환경에서 실행됩니다.
-      모든 예제는 브라우저 상단 <span class="badge ok">▷ 실행</span> 버튼으로 바로 실행 가능합니다.
+      이 가이드의 예제는 <a href="https://wandbox.org/" target="_blank" rel="noopener">Wandbox</a> 온라인 컴파일러에서 실행됩니다.
+      실행 시 Wandbox에 등록된 <strong>사용 가능한 최신 Rust / OpenJDK 버전</strong>을 자동으로 선택하므로,
+      버전이 교체되어도 계속 동작합니다. 모든 예제는 브라우저 상단 <span class="badge ok">▷ 실행</span> 버튼으로 바로 실행 가능합니다.
     </div>
   </div>
 </section>
@@ -19852,11 +19861,10 @@ window.addEventListener('DOMContentLoaded',function(){
 });
 function cp(id){
   var el=document.getElementById(id);if(!el)return;
-  var clone=el.cloneNode(true);
-  clone.querySelectorAll('.ln').forEach(function(s){s.remove();});
-  // 줄바꿈 추가: 각 .line 뒤에 \n
-  var lines = Array.from(clone.querySelectorAll('.line'));
-  var text = lines.map(function(l){return l.innerText||l.textContent;}).join('\n');
+  // .line만 추출 (라인번호 .ln은 형제 요소라 자동 제외됨).
+  // textContent는 innerText와 달리 레이아웃 강제 재계산(reflow)이 없어 대용량 문서에서도 멈추지 않음.
+  var lines = Array.from(el.querySelectorAll('.line'));
+  var text = lines.map(function(l){return l.textContent;}).join('\n');
   if(navigator.clipboard){
     navigator.clipboard.writeText(text).catch(function(){});
   }
@@ -19869,6 +19877,78 @@ function cp(id){
   });
 }
 
+// Wandbox 컴파일러를 런타임에 조회한다.
+// 특정 버전을 하드코딩하면 Wandbox가 구버전을 삭제할 때 실행이 통째로 깨진다(과거 동작하다 멈춘 원인).
+// list.json에서 언어별로 실제 사용 가능한 최신 버전을 찾아 쓰고, 한 번 조회하면 캐시한다.
+let _wbList = null;
+async function resolveCompiler(lang) {
+  const fallback = lang === 'java' ? 'openjdk-jdk-22+36' : 'rust-1.82.0';
+  if (_wbList === null) {
+    try {
+      const r = await fetch('https://wandbox.org/api/list.json');
+      _wbList = r.ok ? await r.json() : false;
+    } catch (e) { _wbList = false; }
+  }
+  if (!Array.isArray(_wbList)) return fallback;
+  const isLang = (lang === 'java')
+    ? (c => c.language === 'Java' || /openjdk|(^|-)jdk/i.test(c.name || ''))
+    : (c => c.language === 'Rust' || /^rustc?-/i.test(c.name || ''));
+  const cands = _wbList.filter(c => c && isLang(c));
+  if (!cands.length) return fallback;
+  const ver = n => { const m = (n || '').match(/(\d+)\.(\d+)(?:\.(\d+))?/); return m ? [(+m[1]||0),(+m[2]||0),(+m[3]||0)] : null; };
+  const numbered = cands.filter(c => ver(c.name));
+  if (numbered.length) {
+    numbered.sort((a, b) => { const va = ver(a.name), vb = ver(b.name); for (let i = 0; i < 3; i++) { if (vb[i] !== va[i]) return vb[i] - va[i]; } return 0; });
+    return numbered[0].name;
+  }
+  const head = cands.find(c => /head/i.test(c.name));
+  return head ? head.name : cands[0].name;
+}
+
+// Wandbox 실행이 실패했을 때 Rust 코드를 Rust Playground에서 열어준다.
+// 반드시 사용자 클릭(제스처) 안에서 호출해야 한다 — 그래야 window.open이 팝업 차단에 막히지 않는다.
+// edition을 명시하지 않으면 Playground가 레거시 호환으로 Rust 2015를 강제하므로 edition=2021을 반드시 지정한다.
+function openInPlayground(code) {
+  var enc = encodeURIComponent(code);
+  var base = 'https://play.rust-lang.org/?version=stable&mode=debug&edition=2021';
+  if (enc.length > 6000) {
+    // 코드가 너무 길어 URL에 실을 수 없는 예외적 경우에만 클립보드를 사용한다.
+    // window.open 전에(문서에 포커스가 있을 때) 복사해야 file://에서 권한 팝업이 뜨지 않는다.
+    if (navigator.clipboard) { navigator.clipboard.writeText(code).catch(function(){}); }
+    window.open(base, '_blank', 'noopener');
+  } else {
+    // 일반적인 경우: 코드를 URL에 실어 그대로 채워서 연다. 클립보드는 건드리지 않는다(권한 팝업 방지).
+    window.open(base + '&code=' + enc, '_blank', 'noopener');
+  }
+}
+
+// 실행 실패 메시지 출력. Rust인 경우 Playground로 넘어가는 버튼을 함께 표시한다.
+function renderRunFailure(outDiv, headerText, lang, code) {
+  outDiv.className = 'run-output show err';
+  outDiv.textContent = '';
+  var msg = document.createElement('div');
+  msg.style.whiteSpace = 'pre-wrap';
+  msg.textContent = headerText;
+  outDiv.appendChild(msg);
+  if (lang === 'rust') {
+    var row = document.createElement('div');
+    row.style.marginTop = '10px';
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pg-btn';
+    b.textContent = '▷ Rust Playground에서 열기';
+    b.onclick = function(){ openInPlayground(code); };
+    row.appendChild(b);
+    var hint = document.createElement('div');
+    hint.style.cssText = 'margin-top:6px;font-size:11px;color:#9aa0a6';
+    hint.textContent = (encodeURIComponent(code).length > 6000)
+      ? '코드가 길어 빈 Rust Playground가 열립니다. Ctrl+V로 붙여넣으세요(코드는 클립보드에 복사됩니다).'
+      : '새 탭에 코드가 채워진 Rust Playground가 열립니다.';
+    row.appendChild(hint);
+    outDiv.appendChild(row);
+  }
+}
+
 async function runCode(blockId, lang) {
   const pre = document.getElementById(blockId);
   const outDiv = document.getElementById('out_' + blockId);
@@ -19876,13 +19956,13 @@ async function runCode(blockId, lang) {
   if (!pre || !outDiv) return;
   // 라인번호 제외하고 코드만 추출
   const lineNodes = pre.querySelectorAll('.line');
-  let code = Array.from(lineNodes).map(function(l){return l.innerText||l.textContent;}).join('\n');
+  let code = Array.from(lineNodes).map(function(l){return l.textContent;}).join('\n');
 
-  const compiler = lang === 'java' ? 'openjdk-jdk-22+36' : 'rust-1.82.0';
   btn.disabled = true;
   btn.textContent = '실행 중...';
   outDiv.className = 'run-output show loading';
   outDiv.textContent = '⏳ 원격 컴파일 중... (Wandbox)';
+  const compiler = await resolveCompiler(lang);
 
   try {
     let body;
@@ -19899,26 +19979,46 @@ async function runCode(blockId, lang) {
       }
       body = { compiler: compiler, code: fixedCode, save: false };
     }
-    const res = await fetch('https://wandbox.org/api/compile.json', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error('API 응답 오류: ' + res.status);
-    const data = await res.json();
-    const compileErr = (data.compiler_error || '').trim();
-    const output = (data.program_output || '').trim();
+    // Wandbox는 서버 자원이 부족하면 "crun: clone: Resource temporarily unavailable" 같은
+    // 일시적 오류를 낸다. 코드가 아니라 서버 상태 문제이며 잠시 후 재시도하면 대개 성공하므로 자동 재시도한다.
+    const TRANSIENT = /Resource temporarily unavailable|OCI runtime|crun:|failed to (?:create|run|start)|EAGAIN|Cannot allocate|try again|Too many/i;
+    const MAX_TRIES = 3;
     const isOnlyWarning = (s) => s.trim().length > 0 && !s.includes('error[') && !s.includes('error:') && s.includes('warning');
-    if (compileErr && !isOnlyWarning(compileErr)) {
-      outDiv.className = 'run-output show err';
-      outDiv.textContent = '🔴 컴파일 에러:\n' + compileErr;
-    } else {
-      outDiv.className = 'run-output show ok';
-      outDiv.textContent = '🟢 출력:\n' + (output || '(출력 없음)');
+    for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
+      if (attempt > 1) {
+        outDiv.className = 'run-output show loading';
+        outDiv.textContent = '⏳ Wandbox 서버 혼잡 — 재시도 중 (' + attempt + '/' + MAX_TRIES + ')...';
+        await new Promise(function(r){ setTimeout(r, 700 * (attempt - 1)); });
+      }
+      const res = await fetch('https://wandbox.org/api/compile.json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(function(){return '';});
+        if (res.status >= 500 && attempt < MAX_TRIES) continue;
+        throw new Error('API 응답 오류 ' + res.status + ' (compiler=' + compiler + ')' + (t ? ' — ' + t.slice(0,200) : ''));
+      }
+      const data = await res.json();
+      const compileErr = (data.compiler_error || '').trim();
+      const progErr = (data.program_error || data.program_message || '').trim();
+      const output = (data.program_output || '').trim();
+      const infra = TRANSIENT.test(compileErr) || TRANSIENT.test(progErr);
+      if (infra && attempt < MAX_TRIES) continue;   // 일시적 서버 오류 → 재시도
+      if (infra) {
+        renderRunFailure(outDiv, '🟠 Wandbox 서버 오류 (일시적):\n' + (compileErr || progErr) + '\n\nWandbox 서버 자원이 부족한 상태입니다. 코드 문제가 아니니 잠시 후 다시 실행해 주세요.', lang, code);
+      } else if (compileErr && !isOnlyWarning(compileErr)) {
+        outDiv.className = 'run-output show err';
+        outDiv.textContent = '🔴 컴파일 에러:\n' + compileErr;
+      } else {
+        outDiv.className = 'run-output show ok';
+        outDiv.textContent = '🟢 출력:\n' + (output || progErr || '(출력 없음)');
+      }
+      break;
     }
   } catch (e) {
-    outDiv.className = 'run-output show err';
-    outDiv.textContent = '🔴 네트워크 오류: ' + e.message;
+    renderRunFailure(outDiv, '🔴 네트워크 오류: ' + e.message + '\n\nWandbox에 연결하지 못했습니다.', lang, code);
   } finally {
     btn.disabled = false;
     btn.textContent = '▷ 실행';
