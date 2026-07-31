@@ -6441,15 +6441,33 @@ async function resolveCompiler(lang) {
 // Wandbox 실행 실패 시 Rust 코드를 Rust Playground에서 연다.
 // 반드시 사용자 클릭(제스처) 안에서 호출해야 window.open이 팝업 차단에 막히지 않는다.
 // edition 미지정 시 Playground가 레거시 호환으로 Rust 2015를 강제하므로 edition=2021을 반드시 지정한다.
+// 클립보드에 텍스트를 '동기적으로' 복사한다. execCommand는 클릭 제스처 안에서 즉시 완료되므로
+// 바로 뒤 window.open이 포커스를 뺏어도 복사가 실패하지 않는다(비동기 clipboard API의 경쟁 문제 회피).
+function copyTextSync(text) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    if (ta.setSelectionRange) ta.setSelectionRange(0, text.length);
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    return true;
+  } catch (e) { return false; }
+}
+
 function openInPlayground(code) {
   var enc = encodeURIComponent(code);
   var base = 'https://play.rust-lang.org/?version=stable&mode=debug&edition=2021';
   if (enc.length > 6000) {
-    // 코드가 너무 길어 URL에 못 실을 때만 클립보드 사용. window.open 전에(포커스 있을 때) 복사해야 file://에서 권한 팝업이 안 뜬다.
-    if (navigator.clipboard) { navigator.clipboard.writeText(code).catch(function(){}); }
+    // 코드가 너무 길어 URL에 못 실음: window.open 전에 '동기적으로' 클립보드에 복사한다.
+    // (비동기 clipboard API는 window.open이 포커스를 뺏으면 file://에서 조용히 실패해 이전 클립보드 내용이 그대로 남는다.)
+    copyTextSync(code);
     window.open(base, '_blank', 'noopener');
   } else {
-    // 일반적인 경우: 코드를 URL에 실어 그대로 채워서 연다. 클립보드는 건드리지 않는다(권한 팝업 방지).
+    // 일반적인 경우: 코드를 URL에 실어 그대로 채워서 연다. 클립보드는 건드리지 않는다.
     window.open(base + '&code=' + enc, '_blank', 'noopener');
   }
 }
