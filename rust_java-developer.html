@@ -6455,30 +6455,25 @@ function openInPlayground(code) {
 }
 
 // 실행 실패 메시지 출력. Rust인 경우 Playground로 넘어가는 버튼을 함께 표시한다.
-function renderRunFailure(outDiv, headerText, lang, code) {
-  outDiv.className = 'run-output show err';
-  outDiv.textContent = '';
-  var msg = document.createElement('div');
-  msg.style.whiteSpace = 'pre-wrap';
-  msg.textContent = headerText;
-  outDiv.appendChild(msg);
-  if (lang === 'rust') {
-    var row = document.createElement('div');
-    row.style.marginTop = '10px';
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'pg-btn';
-    b.textContent = '▷ Rust Playground에서 열기';
-    b.onclick = function(){ openInPlayground(code); };
-    row.appendChild(b);
-    var hint = document.createElement('div');
-    hint.style.cssText = 'margin-top:6px;font-size:11px;color:#9aa0a6';
-    hint.textContent = (encodeURIComponent(code).length > 6000)
-      ? '코드가 길어 빈 Rust Playground가 열립니다. Ctrl+V로 붙여넣으세요(코드는 클립보드에 복사됩니다).'
-      : '새 탭에 코드가 채워진 Rust Playground가 열립니다.';
-    row.appendChild(hint);
-    outDiv.appendChild(row);
-  }
+// 실행 결과 아래에 'Rust Playground에서 열기' 버튼을 덧붙인다(기존 출력은 지우지 않음).
+// Rust만 지원 — 다른 언어(C++/Go/Java)는 file://에서 코드를 프리필해 여는 마땅한 실행 사이트가 없어 버튼을 달지 않는다.
+function appendRunElsewhereBtn(outDiv, lang, code) {
+  if (lang !== 'rust') return;
+  var tooLong = encodeURIComponent(code).length > 6000;
+  var row = document.createElement('div');
+  row.style.marginTop = '10px';
+  var b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'pg-btn';
+  b.textContent = '▷ Rust Playground에서 열기';
+  b.onclick = function(){ openInPlayground(code); };
+  row.appendChild(b);
+  var h = document.createElement('div');
+  h.style.cssText = 'margin-top:6px;font-size:11px;color:#9aa0a6';
+  h.textContent = tooLong ? '코드가 길어 빈 Rust Playground가 열립니다. Ctrl+V로 붙여넣으세요(코드는 클립보드에 복사됩니다).'
+                          : '새 탭에 코드가 채워진 Rust Playground가 열립니다.';
+  row.appendChild(h);
+  outDiv.appendChild(row);
 }
 
 // ── Piston API 코드 실행 ──────────────────────────────
@@ -6609,7 +6604,8 @@ async function runCode(blockId, lang) {
       if (infra && attempt < MAX_TRIES) continue;   // 일시적 서버 오류 → 재시도
 
       if (infra) {
-        renderRunFailure(outDiv, '🟠 Wandbox 서버 오류 (일시적):\n' + (compileErr || progErr) + '\n\nWandbox 서버 자원이 부족한 상태입니다. 코드 문제가 아니니 잠시 후 다시 실행해 주세요.', lang, code);
+        outDiv.className = 'run-output show err';
+        outDiv.textContent = '🟠 Wandbox 서버 오류 (일시적):\n' + (compileErr || progErr) + '\n\nWandbox 서버 자원이 부족한 상태입니다. 코드 문제가 아니니 잠시 후 다시 실행해 주세요.';
       } else if (compileErr && !isOnlyWarning(compileErr)) {
         outDiv.className = 'run-output show err';
         outDiv.textContent = '🔴 컴파일 에러:\n' + compileErr;
@@ -6621,10 +6617,13 @@ async function runCode(blockId, lang) {
         const warn = (isOnlyWarning(compileErr) ? '⚠️ 경고 있음 (실행은 정상)\n' : '');
         outDiv.textContent = '🟢 출력:\n' + (output || '(출력 없음)') + (warn ? '\n\n' + warn : '');
       }
+      appendRunElsewhereBtn(outDiv, lang, code);   // Rust는 결과와 무관하게 Playground 버튼 제공(그 외 언어는 버튼 없음)
       break;
     }
   } catch (e) {
-    renderRunFailure(outDiv, '🔴 네트워크 오류: ' + e.message + '\n\nWandbox에 연결하지 못했습니다.', lang, code);
+    outDiv.className = 'run-output show err';
+    outDiv.textContent = '🔴 네트워크 오류: ' + e.message + '\n\nWandbox에 연결하지 못했습니다.';
+    appendRunElsewhereBtn(outDiv, lang, code);
   } finally {
     btn.disabled = false;
     btn.textContent = '▷ 실행';
