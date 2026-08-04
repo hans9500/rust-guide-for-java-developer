@@ -20332,5 +20332,34 @@ function toggleDD(btn) {
   });
 })();
 </script>
+<!-- part-active v1 (순수 추가: 스크롤 시 사이드바 소제목 강조. 스크롤 이동은 하지 않음 → 클릭 동작 불변) -->
+<style>
+.sb-dd-a.active{color:var(--ac);font-weight:600;background:var(--ac-l)}
+</style>
+<script>
+/* 스크롤에 따라 현재 섹션 안의 현재 Part(소제목)에 해당하는 사이드바 항목만 강조.
+   페이지 스크롤/이동은 전혀 하지 않으므로 기존 v2 클릭 동작·섹션 활성화(onScroll)와 충돌 없음. */
+(function(){
+  var secs=[].slice.call(document.querySelectorAll('section[id]'));
+  var partsBySec=secs.map(function(s){ return [].slice.call(s.querySelectorAll('.part-h[id]')); });
+  var T=120, ticking=false, last=null;
+  function update(){
+    ticking=false;
+    var si=-1;
+    for(var i=0;i<secs.length;i++){ if(secs[i].getBoundingClientRect().top<=T) si=i; }
+    var cur=null;
+    if(si>=0){ var ph=partsBySec[si];
+      for(var j=0;j<ph.length;j++){ if(ph[j].getBoundingClientRect().top<=T) cur=ph[j].id; } }
+    if(cur===last) return;
+    last=cur;
+    var act=document.querySelectorAll('.sb-dd-a.active');
+    for(var k=0;k<act.length;k++) act[k].classList.remove('active');
+    if(cur){ var a=document.querySelector('.sb-dd-a[href="#'+cur+'"]'); if(a) a.classList.add('active'); }
+  }
+  window.addEventListener('scroll', function(){ if(!ticking){ ticking=true; requestAnimationFrame(update); } }, {passive:true});
+  window.addEventListener('load', update);
+  update();
+})();
+</script>
 </body>
 </html>
