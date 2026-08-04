@@ -800,6 +800,7 @@ blockquote.official-quote .ko-mem strong { color: #4ec9b0; }
       <a href="#s18-part10" class="sb-dd-a">Part 10. Sized / ?Sized</a>
       <a href="#s18-part11" class="sb-dd-a">Part 11. 마커 trait 지도</a>
 <a href="#s18-part12" class="sb-dd-a">Part 12. Box&lt;T&gt;</a>
+<a href="#s18-part13" class="sb-dd-a">Part 13. 참조·포인터 지도</a>
     </div>
   </div>
     <div class="sb-item">
@@ -18631,6 +18632,257 @@ help: insert some indirection (e.g., a <span style="color:#4ec9b0;">Box</span>, 
 </div>
 </div>
 
+
+  <!-- ===== s18 Part 13: 참조·포인터 완전 지도 (추가 삽입) ===== -->
+  <div class="part-h" id="s18-part13">Part 13. 참조·포인터 완전 지도 — thin vs fat 총정리</div>
+<div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/reference/dynamically-sized-types.html" target="_blank" rel="noopener noreferrer">Rust Reference: Dynamically Sized Types<span class="external-icon">↗</span></a></div>
+<div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/nomicon/exotic-sizes.html" target="_blank" rel="noopener noreferrer">Rustonomicon: Exotically Sized Types<span class="external-icon">↗</span></a></div>
+<div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/std/mem/fn.size_of.html" target="_blank" rel="noopener noreferrer">std::mem::size_of<span class="external-icon">↗</span></a></div>
+
+<p>Part 10에서 <code>Sized</code>/DST와 fat 포인터의 <strong>크기</strong>를, s19에서 <code>dyn</code>의 vtable을 다뤘습니다. 이 Part는 그 내용을 <strong>하나의 지도</strong>로 묶고, 아직 다루지 않은 경우(배열 vs 슬라이스, <code>Rc</code>/<code>Arc</code>의 힙 내부, 포인터 체인, 커스텀 DST)를 채웁니다. 핵심 원칙은 하나입니다.</p>
+
+<div class="note info">
+  <div class="note-title">🧭 단 하나의 원칙</div>
+  <div class="note-body">
+    가리키는 대상이 <strong><code>Sized</code>(컴파일 타임 크기 확정)</strong>이면 참조는 <strong>얇은(thin) 포인터</strong> — 주소 하나(8 bytes). 대상이 <strong>DST</strong>(슬라이스 <code>[T]</code>, 트레잇 객체 <code>dyn Trait</code>, 마지막 필드가 DST인 구조체)이면 참조는 <strong>뚱뚱한(fat) 포인터</strong> — 주소 + "완성 정보"(16 bytes). Rust Reference(DST)와 <code>size_of</code>로 직접 검증할 수 있습니다.
+    <br><br>
+    이 규칙은 <code>&amp;</code>·<code>&amp;mut</code>·<code>*const</code>·<code>*mut</code>·<code>Box</code>·<code>Rc</code>·<code>Arc</code> 모두에 동일하게 적용됩니다.
+  </div>
+</div>
+
+<h4>참조·포인터 종류 총정리</h4>
+<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:12.5px">
+  <tr style="border-bottom:1px solid #3c3c3c">
+    <th style="text-align:left;padding:6px 8px;color:#569cd6">포인터 / 참조</th>
+    <th style="text-align:left;padding:6px 8px;color:#569cd6">종류</th>
+    <th style="text-align:left;padding:6px 8px;color:#569cd6">메타데이터</th>
+    <th style="text-align:left;padding:6px 8px;color:#569cd6">크기(64bit)</th>
+  </tr>
+  <tr style="border-bottom:1px solid #2a2a2a">
+    <td style="padding:6px 8px"><code>&amp;T</code> <code>&amp;mut T</code> <code>*const T</code> <code>*mut T</code> <span style="color:#858585">(T: Sized)</span></td>
+    <td style="padding:6px 8px;color:#4ec9b0">얇음</td>
+    <td style="padding:6px 8px;color:#c8c8c8">없음</td>
+    <td style="padding:6px 8px;color:#c8c8c8">8</td>
+  </tr>
+  <tr style="border-bottom:1px solid #2a2a2a">
+    <td style="padding:6px 8px"><code>&amp;[T; N]</code> <span style="color:#858585">배열 참조</span></td>
+    <td style="padding:6px 8px;color:#4ec9b0">얇음</td>
+    <td style="padding:6px 8px;color:#c8c8c8">없음 (길이는 타입에)</td>
+    <td style="padding:6px 8px;color:#c8c8c8">8</td>
+  </tr>
+  <tr style="border-bottom:1px solid #2a2a2a">
+    <td style="padding:6px 8px"><code>fn(...)</code> <span style="color:#858585">함수 포인터</span></td>
+    <td style="padding:6px 8px;color:#4ec9b0">얇음</td>
+    <td style="padding:6px 8px;color:#c8c8c8">없음 (코드 주소 1개)</td>
+    <td style="padding:6px 8px;color:#c8c8c8">8</td>
+  </tr>
+  <tr style="border-bottom:1px solid #2a2a2a">
+    <td style="padding:6px 8px"><code>Box&lt;T&gt;</code> <code>Rc&lt;T&gt;</code> <code>Arc&lt;T&gt;</code> <span style="color:#858585">(T: Sized)</span></td>
+    <td style="padding:6px 8px;color:#4ec9b0">얇음</td>
+    <td style="padding:6px 8px;color:#c8c8c8">없음</td>
+    <td style="padding:6px 8px;color:#c8c8c8">8</td>
+  </tr>
+  <tr style="border-bottom:1px solid #2a2a2a">
+    <td style="padding:6px 8px"><code>&amp;str</code> <code>&amp;[T]</code> <code>&amp;mut [T]</code></td>
+    <td style="padding:6px 8px;color:#f48771">뚱뚱</td>
+    <td style="padding:6px 8px;color:#c8c8c8">길이 (요소 개수)</td>
+    <td style="padding:6px 8px;color:#c8c8c8">16</td>
+  </tr>
+  <tr style="border-bottom:1px solid #2a2a2a">
+    <td style="padding:6px 8px"><code>&amp;dyn Trait</code> <code>Box&lt;dyn Trait&gt;</code></td>
+    <td style="padding:6px 8px;color:#f48771">뚱뚱</td>
+    <td style="padding:6px 8px;color:#c8c8c8">vtable 주소</td>
+    <td style="padding:6px 8px;color:#c8c8c8">16</td>
+  </tr>
+  <tr style="border-bottom:1px solid #2a2a2a">
+    <td style="padding:6px 8px"><code>Rc&lt;str&gt;</code> <code>Rc&lt;[T]&gt;</code> <code>Arc&lt;dyn Trait&gt;</code></td>
+    <td style="padding:6px 8px;color:#f48771">뚱뚱</td>
+    <td style="padding:6px 8px;color:#c8c8c8">길이 / vtable</td>
+    <td style="padding:6px 8px;color:#c8c8c8">16</td>
+  </tr>
+  <tr>
+    <td style="padding:6px 8px">커스텀 DST 참조 <span style="color:#858585">(마지막 필드가 DST)</span></td>
+    <td style="padding:6px 8px;color:#f48771">뚱뚱</td>
+    <td style="padding:6px 8px;color:#c8c8c8">길이 / vtable</td>
+    <td style="padding:6px 8px;color:#c8c8c8">16</td>
+  </tr>
+</table>
+<div class="note info">
+  <div class="note-title">ℹ️ "얇음 = 8, 뚱뚱 = 16"은 현재 구현입니다</div>
+  <div class="note-body">
+    Rust Reference는 <em>"you should not rely on this, all pointers to DSTs are currently twice the size of usize"</em>라고 명시합니다 — <strong>보장이 아니라 현재 구현</strong>. 아래 예제의 <code>size_of</code>로 각자의 환경에서 직접 확인하세요.
+  </div>
+</div>
+
+<div class="ex-label concept">예제 13-1: size_of로 얇음(8) vs 뚱뚱(16) 전부 실증</div>
+<div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s18_p13_sizes')">복사</button>
+<button class="run-btn" onclick="runCode('r_s18_p13_sizes','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s18_p13_sizes">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">use</span> std::mem::<span class="fn">size_of</span>;</span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">trait</span> <span class="tp">Trait</span> { <span class="kw">fn</span> <span class="fn">m</span>(&amp;<span class="kw">self</span>); }</span></div><div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">4</span><span class="line">    <span class="cm">// 얇은 포인터 = 8 bytes</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">println!</span>(<span class="st">"&amp;i32       = {}"</span>, <span class="fn">size_of</span>::&lt;&amp;<span class="tp">i32</span>&gt;());</span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="fn">println!</span>(<span class="st">"&amp;[i32; 3]  = {}"</span>, <span class="fn">size_of</span>::&lt;&amp;[<span class="tp">i32</span>; 3]&gt;());</span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="fn">println!</span>(<span class="st">"fn()       = {}"</span>, <span class="fn">size_of</span>::&lt;<span class="kw">fn</span>()&gt;());</span></div><div class="code-row"><span class="ln">8</span><span class="line">    <span class="fn">println!</span>(<span class="st">"Box&lt;i32&gt;   = {}"</span>, <span class="fn">size_of</span>::&lt;<span class="tp">Box</span>&lt;<span class="tp">i32</span>&gt;&gt;());</span></div><div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println!</span>(<span class="st">"Rc&lt;i32&gt;    = {}"</span>, <span class="fn">size_of</span>::&lt;std::rc::<span class="tp">Rc</span>&lt;<span class="tp">i32</span>&gt;&gt;());</span></div><div class="code-row"><span class="ln">10</span><span class="line">    <span class="cm">// 뚱뚱한 포인터 = 16 bytes</span></span></div><div class="code-row"><span class="ln">11</span><span class="line">    <span class="fn">println!</span>(<span class="st">"&amp;str       = {}"</span>, <span class="fn">size_of</span>::&lt;&amp;<span class="tp">str</span>&gt;());</span></div><div class="code-row"><span class="ln">12</span><span class="line">    <span class="fn">println!</span>(<span class="st">"&amp;[i32]     = {}"</span>, <span class="fn">size_of</span>::&lt;&amp;[<span class="tp">i32</span>]&gt;());</span></div><div class="code-row"><span class="ln">13</span><span class="line">    <span class="fn">println!</span>(<span class="st">"&amp;dyn Trait = {}"</span>, <span class="fn">size_of</span>::&lt;&amp;<span class="kw">dyn</span> <span class="tp">Trait</span>&gt;());</span></div><div class="code-row"><span class="ln">14</span><span class="line">    <span class="fn">println!</span>(<span class="st">"Box&lt;dyn&gt;   = {}"</span>, <span class="fn">size_of</span>::&lt;<span class="tp">Box</span>&lt;<span class="kw">dyn</span> <span class="tp">Trait</span>&gt;&gt;());</span></div><div class="code-row"><span class="ln">15</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s18_p13_sizes"></div>
+</div>
+
+<h4>String 객체 참조 — 포인터 체인</h4>
+<p><code>&amp;String</code>은 스택의 <code>String</code> 구조체(24B)를 가리키는 <strong>얇은</strong> 포인터이고, <code>&amp;str</code>은 힙의 바이트를 직접 가리키며 길이를 든 <strong>뚱뚱한</strong> 포인터입니다. "무엇이 무엇을 가리키나"를 봅니다.</p>
+<figure class="svg-fig"><figcaption style="padding:8px 12px;background:#252526;color:#ffffff;font:12px ui-monospace;border-bottom:1px solid #3c3c3c">String 참조 체인 — &amp;String(얇음) → String{ptr,len,cap} → 힙, &amp;str(뚱뚱) → 힙 (std::string::String)</figcaption><svg viewBox="0 0 700 350" xmlns="http://www.w3.org/2000/svg" style="background:#1e1e1e;width:100%;height:auto;display:block"><style>.t{fill:#d4d4d4;font:12px ui-monospace}.tp{fill:#4ec9b0;font:bold 12px ui-monospace}.hdr{fill:#569cd6;font:bold 12px ui-sans-serif}.sm{fill:#c8c8c8;font:11px ui-sans-serif}.or{fill:#ce9178;font:12px ui-monospace}.wh{fill:#ffffff;font:bold 12px ui-sans-serif}</style>
+<defs><marker id="p13a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#569cd6" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+<text x="16" y="22" class="wh">&amp;String = 얇음(8B) → 구조체, &amp;str = 뚱뚱(16B) → 힙 직접</text>
+<text x="30" y="52" class="hdr">Stack</text>
+<rect x="30" y="60" width="150" height="42" rx="4" fill="#1a2030" stroke="#569cd6" stroke-width="1"/><text x="105" y="79" class="tp" text-anchor="middle">&amp;String</text><text x="105" y="94" class="sm" text-anchor="middle">얇음 · 8B</text>
+<line x1="105" y1="102" x2="105" y2="140" stroke="#569cd6" stroke-width="1.5" marker-end="url(#p13a)"/>
+<text x="200" y="134" class="sm" text-anchor="middle">String — 스택 24B (필드 순서 미보장)</text>
+<rect x="40" y="142" width="100" height="42" rx="3" fill="#0d1f0d" stroke="#4ec9b0" stroke-width="1"/><text x="90" y="161" class="tp" text-anchor="middle">ptr</text><text x="90" y="176" class="sm" text-anchor="middle">→ 힙</text>
+<rect x="145" y="142" width="100" height="42" rx="3" fill="#0d1f0d" stroke="#4ec9b0" stroke-width="1"/><text x="195" y="161" class="tp" text-anchor="middle">len</text><text x="195" y="176" class="sm" text-anchor="middle">5</text>
+<rect x="250" y="142" width="100" height="42" rx="3" fill="#0d1f0d" stroke="#4ec9b0" stroke-width="1"/><text x="300" y="161" class="tp" text-anchor="middle">cap</text><text x="300" y="176" class="sm" text-anchor="middle">8</text>
+<rect x="440" y="60" width="230" height="42" rx="4" fill="#3a1a1a" stroke="#f48771" stroke-width="1"/><text x="480" y="86" class="sm">&amp;str (뚱뚱 16B)</text>
+<rect x="450" y="142" width="100" height="42" rx="3" fill="#1a2030" stroke="#569cd6" stroke-width="1"/><text x="500" y="161" class="tp" text-anchor="middle">ptr</text><text x="500" y="176" class="sm" text-anchor="middle">→ 힙</text>
+<rect x="555" y="142" width="100" height="42" rx="3" fill="#0d1f0d" stroke="#4ec9b0" stroke-width="1"/><text x="605" y="161" class="tp" text-anchor="middle">len</text><text x="605" y="176" class="sm" text-anchor="middle">5</text>
+<path d="M90 184 L90 250 L210 250 L210 274" fill="none" stroke="#569cd6" stroke-width="1.5" marker-end="url(#p13a)"/>
+<path d="M500 184 L500 250 L380 250 L380 274" fill="none" stroke="#569cd6" stroke-width="1.5" marker-end="url(#p13a)"/>
+<text x="300" y="270" class="sm" text-anchor="middle">힙 버퍼 (UTF-8): 68 65 6C 6C 6F</text>
+<rect x="150" y="276" width="300" height="42" rx="4" fill="#2a220d" stroke="#ce9178" stroke-width="1"/><text x="300" y="303" class="or" text-anchor="middle">h   e   l   l   o</text>
+</svg></figure>
+<blockquote class="official-quote"><p>A String is made up of three components: <em>a pointer to some bytes, a length, and a capacity</em>. This buffer is always stored on the heap.</p><cite>— std::string::String — Rust 표준 라이브러리</cite><p style="color:#858585;font-size:13px;margin-top:8px;padding-top:7px;border-top:1px dashed #2e2e2e;font-style:normal">▸ 세 필드(포인터·길이·용량)의 메모리 배치 <strong>순서는 보장되지 않습니다</strong>. 그림은 개념적 배치입니다.</p></blockquote>
+<div class="ex-label concept">예제 13-2: &amp;String(8) vs &amp;str(16), 그리고 같은 힙을 가리킴</div>
+<div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s18_p13_string')">복사</button>
+<button class="run-btn" onclick="runCode('r_s18_p13_string','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s18_p13_string">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">use</span> std::mem::<span class="fn">size_of</span>;</span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> s = <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"hello"</span>);</span></div><div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> slice: &amp;<span class="tp">str</span> = &amp;s;         <span class="cm">// String → &amp;str (Deref)</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">println!</span>(<span class="st">"&amp;String = {} bytes"</span>, <span class="fn">size_of</span>::&lt;&amp;<span class="tp">String</span>&gt;());  <span class="cm">// 8</span></span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="fn">println!</span>(<span class="st">"&amp;str    = {} bytes"</span>, <span class="fn">size_of</span>::&lt;&amp;<span class="tp">str</span>&gt;());     <span class="cm">// 16</span></span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="fn">println!</span>(<span class="st">"len = {}"</span>, slice.<span class="fn">len</span>());                    <span class="cm">// 5</span></span></div><div class="code-row"><span class="ln">8</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s18_p13_string"></div>
+</div>
+
+<h4>Vec 참조 — 포인터 체인</h4>
+<p><code>Vec&lt;T&gt;</code>도 구조가 같습니다. <code>&amp;Vec&lt;T&gt;</code>는 24B 구조체를 가리키는 얇은 포인터, <code>&amp;[T]</code>(슬라이스 참조)는 힙 요소를 직접 가리키며 개수를 든 뚱뚱한 포인터입니다.</p>
+<figure class="svg-fig"><figcaption style="padding:8px 12px;background:#252526;color:#ffffff;font:12px ui-monospace;border-bottom:1px solid #3c3c3c">Vec 참조 체인 — &amp;Vec(얇음) → Vec{ptr,cap,len} → 힙, &amp;[T](뚱뚱) → 요소 (std::vec::Vec)</figcaption><svg viewBox="0 0 700 350" xmlns="http://www.w3.org/2000/svg" style="background:#1e1e1e;width:100%;height:auto;display:block"><style>.t{fill:#d4d4d4;font:12px ui-monospace}.tp{fill:#4ec9b0;font:bold 12px ui-monospace}.hdr{fill:#569cd6;font:bold 12px ui-sans-serif}.sm{fill:#c8c8c8;font:11px ui-sans-serif}.or{fill:#ce9178;font:bold 12px ui-monospace}.wh{fill:#ffffff;font:bold 12px ui-sans-serif}</style>
+<defs><marker id="p13b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#569cd6" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+<text x="16" y="22" class="wh">&amp;Vec&lt;i32&gt; = 얇음(8B) → 구조체, &amp;[i32] = 뚱뚱(16B) → 요소 직접</text>
+<text x="30" y="52" class="hdr">Stack</text>
+<rect x="30" y="60" width="160" height="42" rx="4" fill="#1a2030" stroke="#569cd6" stroke-width="1"/><text x="110" y="79" class="tp" text-anchor="middle">&amp;Vec&lt;i32&gt;</text><text x="110" y="94" class="sm" text-anchor="middle">얇음 · 8B</text>
+<line x1="110" y1="102" x2="110" y2="140" stroke="#569cd6" stroke-width="1.5" marker-end="url(#p13b)"/>
+<text x="200" y="134" class="sm" text-anchor="middle">Vec — 스택 24B (필드 순서 미보장)</text>
+<rect x="40" y="142" width="100" height="42" rx="3" fill="#0d1f0d" stroke="#4ec9b0" stroke-width="1"/><text x="90" y="161" class="tp" text-anchor="middle">ptr</text><text x="90" y="176" class="sm" text-anchor="middle">→ 힙</text>
+<rect x="145" y="142" width="100" height="42" rx="3" fill="#0d1f0d" stroke="#4ec9b0" stroke-width="1"/><text x="195" y="161" class="tp" text-anchor="middle">cap</text><text x="195" y="176" class="sm" text-anchor="middle">4</text>
+<rect x="250" y="142" width="100" height="42" rx="3" fill="#0d1f0d" stroke="#4ec9b0" stroke-width="1"/><text x="300" y="161" class="tp" text-anchor="middle">len</text><text x="300" y="176" class="sm" text-anchor="middle">3</text>
+<rect x="440" y="60" width="230" height="42" rx="4" fill="#3a1a1a" stroke="#f48771" stroke-width="1"/><text x="480" y="86" class="sm">&amp;[i32] (뚱뚱 16B)</text>
+<rect x="450" y="142" width="100" height="42" rx="3" fill="#1a2030" stroke="#569cd6" stroke-width="1"/><text x="500" y="161" class="tp" text-anchor="middle">ptr</text><text x="500" y="176" class="sm" text-anchor="middle">→ 힙</text>
+<rect x="555" y="142" width="100" height="42" rx="3" fill="#0d1f0d" stroke="#4ec9b0" stroke-width="1"/><text x="605" y="161" class="tp" text-anchor="middle">len</text><text x="605" y="176" class="sm" text-anchor="middle">3</text>
+<path d="M90 184 L90 250 L200 250 L200 274" fill="none" stroke="#569cd6" stroke-width="1.5" marker-end="url(#p13b)"/>
+<path d="M500 184 L500 250 L400 250 L400 274" fill="none" stroke="#569cd6" stroke-width="1.5" marker-end="url(#p13b)"/>
+<text x="300" y="270" class="sm" text-anchor="middle">힙 버퍼 (i32 요소, 각 4B)</text>
+<rect x="200" y="276" width="70" height="42" rx="4" fill="#2a220d" stroke="#ce9178" stroke-width="1"/><text x="235" y="303" class="or" text-anchor="middle">1</text>
+<rect x="275" y="276" width="70" height="42" rx="4" fill="#2a220d" stroke="#ce9178" stroke-width="1"/><text x="310" y="303" class="or" text-anchor="middle">2</text>
+<rect x="350" y="276" width="70" height="42" rx="4" fill="#2a220d" stroke="#ce9178" stroke-width="1"/><text x="385" y="303" class="or" text-anchor="middle">3</text>
+</svg></figure>
+<blockquote class="official-quote"><p>Vec is a (pointer, capacity, length) triplet. No more, no less. <em>The order of these fields is completely unspecified.</em></p><cite>— std::vec::Vec — Rust 표준 라이브러리</cite></blockquote>
+<div class="ex-label concept">예제 13-3: &amp;Vec(8) vs &amp;[T] 슬라이스(16)</div>
+<div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s18_p13_vec')">복사</button>
+<button class="run-btn" onclick="runCode('r_s18_p13_vec','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s18_p13_vec">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">use</span> std::mem::<span class="fn">size_of</span>;</span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> v = <span class="kw">vec</span>![1, 2, 3];</span></div><div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> sl: &amp;[<span class="tp">i32</span>] = &amp;v;        <span class="cm">// Vec → &amp;[i32] (Deref)</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">println!</span>(<span class="st">"&amp;Vec&lt;i32&gt; = {} bytes"</span>, <span class="fn">size_of</span>::&lt;&amp;<span class="tp">Vec</span>&lt;<span class="tp">i32</span>&gt;&gt;()); <span class="cm">// 8</span></span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="fn">println!</span>(<span class="st">"&amp;[i32]    = {} bytes"</span>, <span class="fn">size_of</span>::&lt;&amp;[<span class="tp">i32</span>]&gt;());       <span class="cm">// 16</span></span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="fn">println!</span>(<span class="st">"len = {}"</span>, sl.<span class="fn">len</span>());                          <span class="cm">// 3</span></span></div><div class="code-row"><span class="ln">8</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s18_p13_vec"></div>
+</div>
+
+<h4>⚠️ 함정 — 배열 참조는 얇고, 슬라이스 참조는 뚱뚱하다</h4>
+<p>생김새가 비슷한데 크기가 다릅니다. 배열 <code>[T; N]</code>은 길이가 <strong>타입에</strong> 박혀 있어 <code>Sized</code> → <code>&amp;[T; N]</code>는 얇음(8B). 슬라이스 <code>[T]</code>는 길이가 런타임 정보 → <code>&amp;[T]</code>는 뚱뚱(16B).</p>
+<figure class="svg-fig"><figcaption style="padding:8px 12px;background:#252526;color:#ffffff;font:12px ui-monospace;border-bottom:1px solid #3c3c3c">배열 참조(얇음 8B) vs 슬라이스 참조(뚱뚱 16B) — Rust Reference: Dynamically Sized Types</figcaption><svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" style="background:#1e1e1e;width:100%;height:auto;display:block"><style>.tp{fill:#4ec9b0;font:bold 12px ui-monospace}.sm{fill:#c8c8c8;font:11px ui-sans-serif}.or{fill:#ce9178;font:bold 12px ui-monospace}.wh{fill:#ffffff;font:bold 12px ui-sans-serif}.ok{fill:#4ec9b0;font:bold 11px ui-sans-serif}.er{fill:#f48771;font:bold 11px ui-sans-serif}</style>
+<defs><marker id="p13c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#569cd6" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+<text x="140" y="34" class="ok" text-anchor="middle">&amp;[i32; 3] — 얇음(8B)</text>
+<rect x="60" y="44" width="160" height="46" rx="4" fill="#0d1f0d" stroke="#4ec9b0" stroke-width="1.2"/><text x="140" y="64" class="tp" text-anchor="middle">ptr</text><text x="140" y="80" class="sm" text-anchor="middle">len 필드 없음 (길이는 타입)</text>
+<text x="530" y="34" class="er" text-anchor="middle">&amp;[i32] — 뚱뚱(16B)</text>
+<rect x="440" y="44" width="90" height="46" rx="4" fill="#1a2030" stroke="#569cd6" stroke-width="1.2"/><text x="485" y="64" class="tp" text-anchor="middle">ptr</text><text x="485" y="80" class="sm" text-anchor="middle">→ 요소</text>
+<rect x="535" y="44" width="90" height="46" rx="4" fill="#0d1f0d" stroke="#4ec9b0" stroke-width="1.2"/><text x="580" y="64" class="tp" text-anchor="middle">len</text><text x="580" y="80" class="sm" text-anchor="middle">3</text>
+<path d="M140 90 L140 200 L250 200 L250 224" fill="none" stroke="#569cd6" stroke-width="1.5" marker-end="url(#p13c)"/>
+<path d="M485 90 L485 200 L430 200 L430 224" fill="none" stroke="#569cd6" stroke-width="1.5" marker-end="url(#p13c)"/>
+<text x="340" y="220" class="sm" text-anchor="middle">연속된 3개 요소 (i32 × 3)</text>
+<rect x="240" y="226" width="70" height="44" rx="4" fill="#2a220d" stroke="#ce9178" stroke-width="1"/><text x="275" y="254" class="or" text-anchor="middle">10</text>
+<rect x="315" y="226" width="70" height="44" rx="4" fill="#2a220d" stroke="#ce9178" stroke-width="1"/><text x="350" y="254" class="or" text-anchor="middle">20</text>
+<rect x="390" y="226" width="70" height="44" rx="4" fill="#2a220d" stroke="#ce9178" stroke-width="1"/><text x="425" y="254" class="or" text-anchor="middle">30</text>
+<text x="140" y="112" class="sm" text-anchor="middle">길이 3은 타입에 고정</text>
+<text x="530" y="112" class="sm" text-anchor="middle">길이 3을 포인터가 운반</text>
+</svg></figure>
+<div class="ex-label concept">예제 13-4: 배열 참조 8 vs 슬라이스 참조 16 실증</div>
+<div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s18_p13_arr')">복사</button>
+<button class="run-btn" onclick="runCode('r_s18_p13_arr','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s18_p13_arr">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">use</span> std::mem::<span class="fn">size_of</span>;</span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> arr: [<span class="tp">i32</span>; 3] = [10, 20, 30];</span></div><div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> sl: &amp;[<span class="tp">i32</span>] = &amp;arr;     <span class="cm">// 배열 → 슬라이스 (unsize 강제변환)</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">println!</span>(<span class="st">"&amp;[i32; 3] = {} bytes"</span>, <span class="fn">size_of</span>::&lt;&amp;[<span class="tp">i32</span>; 3]&gt;()); <span class="cm">// 8</span></span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="fn">println!</span>(<span class="st">"&amp;[i32]    = {} bytes"</span>, <span class="fn">size_of</span>::&lt;&amp;[<span class="tp">i32</span>]&gt;());     <span class="cm">// 16</span></span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="fn">println!</span>(<span class="st">"슬라이스 길이 = {}"</span>, sl.<span class="fn">len</span>());              <span class="cm">// 3</span></span></div><div class="code-row"><span class="ln">8</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s18_p13_arr"></div>
+</div>
+
+<h4>Rc / Arc — 힙 제어블록 (강한/약한 카운트 + 값)</h4>
+<p><code>Rc&lt;T&gt;</code>·<code>Arc&lt;T&gt;</code>는 <code>Sized T</code>에 대해 얇은 포인터 하나지만, 가리키는 힙 블록 안에는 <strong>값뿐 아니라 카운트 두 개</strong>(강한 count, 약한 count)가 함께 있습니다. <code>clone()</code>은 값을 복사하지 않고 강한 카운트만 올립니다.</p>
+<figure class="svg-fig"><figcaption style="padding:8px 12px;background:#252526;color:#ffffff;font:12px ui-monospace;border-bottom:1px solid #3c3c3c">Rc / Arc — 여러 핸들이 하나의 힙 블록(강한·약한 카운트 + 값)을 공유 (std::rc)</figcaption><svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" style="background:#1e1e1e;width:100%;height:auto;display:block"><style>.tp{fill:#4ec9b0;font:bold 12px ui-monospace}.sm{fill:#c8c8c8;font:11px ui-sans-serif}.hdr{fill:#569cd6;font:bold 12px ui-sans-serif}.wh{fill:#ffffff;font:bold 12px ui-sans-serif}.pu{fill:#c586c0;font:bold 12px ui-monospace}</style>
+<defs><marker id="p13d" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#569cd6" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+<text x="30" y="30" class="hdr">Stack — Rc 핸들 (각 8B)</text>
+<rect x="30" y="42" width="180" height="40" rx="4" fill="#1a2030" stroke="#569cd6" stroke-width="1"/><text x="120" y="67" class="tp" text-anchor="middle">Rc&lt;Point&gt;  (foo)</text>
+<rect x="30" y="108" width="180" height="40" rx="4" fill="#1a2030" stroke="#569cd6" stroke-width="1"/><text x="120" y="133" class="tp" text-anchor="middle">Rc&lt;Point&gt;  (clone)</text>
+<text x="120" y="180" class="sm" text-anchor="middle">clone() → 강한 카운트 +1</text>
+<text x="120" y="198" class="sm" text-anchor="middle">값은 복사하지 않음</text>
+<path d="M210 62 L358 62" fill="none" stroke="#569cd6" stroke-width="1.5" marker-end="url(#p13d)"/>
+<path d="M210 128 L300 128 L300 70 L358 70" fill="none" stroke="#569cd6" stroke-width="1.5" marker-end="url(#p13d)"/>
+<text x="500" y="30" class="hdr">Heap — 제어블록 + 값</text>
+<rect x="360" y="42" width="300" height="40" rx="4" fill="#2a1a3a" stroke="#c586c0" stroke-width="1"/><text x="378" y="67" class="pu">strong</text><text x="642" y="67" class="sm" text-anchor="end">강한 카운트 = 2</text>
+<rect x="360" y="90" width="300" height="40" rx="4" fill="#2a1a3a" stroke="#c586c0" stroke-width="1"/><text x="378" y="115" class="pu">weak</text><text x="642" y="115" class="sm" text-anchor="end">약한 카운트 = 0</text>
+<rect x="360" y="138" width="300" height="48" rx="4" fill="#0d1f0d" stroke="#4ec9b0" stroke-width="1"/><text x="378" y="159" class="tp">value: Point</text><text x="642" y="159" class="sm" text-anchor="end">실제 데이터</text><text x="378" y="177" class="sm">x: i32, y: i32</text>
+<text x="510" y="216" class="sm" text-anchor="middle">※ 내부 필드 배치는 현재 구현 — 안정 보장 아님</text>
+</svg></figure>
+<blockquote class="official-quote"><p>마지막 <code>Rc</code>가 파괴되면 그 할당에 저장된 값(inner value)도 drop됩니다. <em>Weak pointers do not keep the value inside the allocation alive</em> — 다만 할당(backing store) 자체는 유지합니다.</p><cite>— std::rc — Rust 표준 라이브러리</cite></blockquote>
+<div class="ex-label concept">예제 13-5: 강한/약한 카운트 관찰 (공식 문서 예제 기반)</div>
+<div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s18_p13_rc')">복사</button>
+<button class="run-btn" onclick="runCode('r_s18_p13_rc','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s18_p13_rc">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">use</span> std::rc::<span class="tp">Rc</span>;</span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> five = <span class="tp">Rc</span>::<span class="fn">new</span>(5);</span></div><div class="code-row"><span class="ln">4</span><span class="line">    <span class="fn">println!</span>(<span class="st">"strong = {}"</span>, <span class="tp">Rc</span>::<span class="fn">strong_count</span>(&amp;five));   <span class="cm">// 1</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">let</span> also = <span class="tp">Rc</span>::<span class="fn">clone</span>(&amp;five);                    <span class="cm">// 값 복사 X, 카운트 +1</span></span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="fn">println!</span>(<span class="st">"strong = {}"</span>, <span class="tp">Rc</span>::<span class="fn">strong_count</span>(&amp;five));   <span class="cm">// 2</span></span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> weak = <span class="tp">Rc</span>::<span class="fn">downgrade</span>(&amp;five);                   <span class="cm">// 약한 참조</span></span></div><div class="code-row"><span class="ln">8</span><span class="line">    <span class="fn">println!</span>(<span class="st">"weak   = {}"</span>, <span class="tp">Rc</span>::<span class="fn">weak_count</span>(&amp;five));     <span class="cm">// 1</span></span></div><div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println!</span>(<span class="st">"upgrade = {}"</span>, weak.<span class="fn">upgrade</span>().<span class="fn">is_some</span>()); <span class="cm">// true</span></span></div><div class="code-row"><span class="ln">10</span><span class="line">    <span class="fn">drop</span>(also);                                          <span class="cm">// 강한 카운트 -1</span></span></div><div class="code-row"><span class="ln">11</span><span class="line">    <span class="fn">println!</span>(<span class="st">"strong = {}"</span>, <span class="tp">Rc</span>::<span class="fn">strong_count</span>(&amp;five));   <span class="cm">// 1</span></span></div><div class="code-row"><span class="ln">12</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s18_p13_rc"></div>
+</div>
+
+<div class="note info">
+  <div class="note-title">🧩 커스텀 DST — 마지막 필드가 DST면 구조체 전체가 DST</div>
+  <div class="note-body">
+    구조체의 <strong>마지막 필드</strong>가 DST이면 그 구조체도 DST가 되고, 그 참조는 fat 포인터가 됩니다. Rustonomicon의 예:
+    <br><br>
+    <code>struct Foo { info: u32, data: [u8] }</code>  <span style="color:#858585">// data가 슬라이스라 Foo는 DST → 스택에 직접 못 놓음, 포인터 필수</span>
+    <br><br>
+    이때 <code>&amp;Foo</code>는 <code>data</code>의 길이를 메타데이터로 담아 뚱뚱해집니다. 트레잇 객체·슬라이스와 함께 fat 포인터를 만드는 세 번째 경우입니다. (Rustonomicon: Exotically Sized Types)
+  </div>
+</div>
+
+<div class="note ok">
+  <div class="note-title">✅ 한 줄 요약 + Java 비교</div>
+  <div class="note-body">
+    <ul>
+        <li><strong>원칙</strong>: 참조·<code>Box</code>·<code>Rc</code>·<code>Arc</code>·원시 포인터 무엇이든 — 대상이 <code>Sized</code>면 얇음(주소 1개), DST(슬라이스·트레잇 객체·커스텀 DST)면 뚱뚱(주소 + 완성 정보).</li>
+        <li><strong>완성 정보</strong>: 슬라이스는 길이, 트레잇 객체는 vtable 주소.</li>
+        <li><strong>Rc/Arc 추가</strong>: 얇은 핸들이 가리키는 <em>힙 블록</em> 안에 강한/약한 카운트가 값과 함께 산다. <code>clone</code>은 카운트만 증가.</li>
+        <li><strong>Java 비교</strong>: Java는 객체 메서드 호출이 런타임 타입 정보를 통해 가상 디스패치됩니다. Rust는 <code>dyn</code>을 쓸 때만 vtable을 <strong>명시적으로</strong> fat 포인터에 실어 다닙니다 — 정적 디스패치(제네릭)에서는 vtable이 없습니다.</li>
+    </ul>
+  </div>
+</div>
+
+
 </section>
 
 <section id="s19">
@@ -20042,6 +20294,43 @@ function toggleDD(btn) {
   btn.textContent = isOpen ? '+' : '−';
 }
 
+</script>
+<script>
+/* 앵커 스크롤 보정 v2 (순수 추가): 거대 문서에서 위쪽 인라인 SVG 높이가 늦게 확정되어
+   내부 앵커가 대상보다 위(언더슈트)에 착지하는 문제 교정.
+   - 내부(#) 링크 클릭을 가로채 기본 부드러운 스크롤을 막고, 레이아웃을 강제 확정한 뒤 즉시 이동.
+   - 지연 렌더 대비 한 번 더 보정. 외부(https) 링크·버튼은 건드리지 않음. */
+(function(){
+  function scrollToId(id){
+    var el=document.getElementById(id); if(!el) return;
+    var de=document.documentElement;
+    var prev=de.style.scrollBehavior;
+    de.style.scrollBehavior='auto';        /* 부드러운 스크롤 잠시 끔 → 즉시 이동 */
+    void de.offsetHeight;                    /* 강제 레이아웃 → SVG 높이 확정 */
+    var y=el.getBoundingClientRect().top+(window.pageYOffset||de.scrollTop);
+    window.scrollTo(0, y);
+    de.style.scrollBehavior=prev;
+  }
+  document.addEventListener('click', function(e){
+    var a=e.target && e.target.closest ? e.target.closest('a[href^="#"]') : null;
+    if(!a) return;
+    var raw=a.getAttribute('href')||'';
+    if(raw.length<2) return;
+    var id=decodeURIComponent(raw.slice(1));
+    if(!document.getElementById(id)) return;
+    e.preventDefault();
+    if(history.pushState){ try{ history.pushState(null,'','#'+id); }catch(_){ location.hash=id; } }
+    else { location.hash=id; }
+    scrollToId(id);
+    setTimeout(function(){ scrollToId(id); }, 250);   /* 지연 렌더 보정 */
+  }, true);
+  window.addEventListener('load', function(){
+    if(location.hash && location.hash.length>1){
+      var id=decodeURIComponent(location.hash.slice(1));
+      setTimeout(function(){ scrollToId(id); }, 250);
+    }
+  });
+})();
 </script>
 </body>
 </html>
