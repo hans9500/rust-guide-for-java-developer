@@ -672,6 +672,9 @@ blockquote.official-quote .ko-mem strong { color: #4ec9b0; }
       <a href="#s8-part5" class="sb-dd-a">Part 5. 튜플 구조체</a>
       <a href="#s8-part6" class="sb-dd-a">Part 6. 연관함수</a>
       <a href="#s8-part7" class="sb-dd-a">Part 7. 도서관 시스템</a>
+      <a href="#s8-part8" class="sb-dd-a">Part 8. 메서드 호출의 정체</a>
+      <a href="#s8-part9" class="sb-dd-a">Part 9. 모듈과 가시성</a>
+      <a href="#s8-part10" class="sb-dd-a">Part 10. 테스트 작성</a>
     </div>
   </div>
   <div class="sb-item">
@@ -744,6 +747,8 @@ blockquote.official-quote .ko-mem strong { color: #4ec9b0; }
       <a href="#s14-part6" class="sb-dd-a">Part 6. #[derive]</a>
       <a href="#s14-part7" class="sb-dd-a">Part 7. 여러 trait</a>
       <a href="#s14-part8" class="sb-dd-a">Part 8. trait 객체 반환</a>
+      <a href="#s14-part9" class="sb-dd-a">Part 9. FromStr·parse·터보피시</a>
+      <a href="#s14-part10" class="sb-dd-a">Part 10. 이름 충돌·완전 정규화</a>
     </div>
   </div>
   <div class="sb-item">
@@ -801,6 +806,7 @@ blockquote.official-quote .ko-mem strong { color: #4ec9b0; }
       <a href="#s18-part11" class="sb-dd-a">Part 11. 마커 trait 지도</a>
 <a href="#s18-part12" class="sb-dd-a">Part 12. Box&lt;T&gt;</a>
 <a href="#s18-part13" class="sb-dd-a">Part 13. 참조·포인터 지도</a>
+<a href="#s18-part14" class="sb-dd-a">Part 14. Weak/순환 참조</a>
     </div>
   </div>
     <div class="sb-item">
@@ -4038,7 +4044,7 @@ Therefore, Rust doesn't need to free anything when s1 goes out of scope.</code><
         <li><strong>컴파일 타임에 변환</strong> → 런타임 오버헤드 없음</li>
         <li>그래서 Rust 관례는 <code>&amp;str</code>을 선호</li>
       </ul>
-      📚 이게 작동하는 원리(<code>Deref</code> trait)는 <strong><a href="#s9" style="color:inherit;text-decoration:underline">섹션 9 「스마트 포인터」</a></strong>에서 정식으로 배웁니다.
+      📚 이게 작동하는 원리(<code>Deref</code> trait)는 <strong><a href="#s18-part7" style="color:inherit;text-decoration:underline">섹션 18 「Deref / 스마트 포인터」</a></strong>에서 정식으로 배웁니다.
       지금은 "이런 게 있어서 <code>&amp;String</code>을 <code>&amp;str</code>처럼 쓸 수 있다"만 기억하시면 됩니다.
     </div>
   </div>
@@ -4673,6 +4679,214 @@ help: consider introducing a named lifetime parameter
 2 | fn longest&lt;&#x27;a&gt;(s1: &amp;&#x27;a str, s2: &amp;&#x27;a str) -&gt; &amp;&#x27;a str {</div>
     </div>
   </div>
+
+
+  <!-- ===== s6: 왜 'a가 필요한가 (추가 삽입: 친구/교집합 설명 + SVG + 예제) ===== -->
+  <h3>🧠 왜 <code>'a</code>가 필요한가 — "친구가 같이 있는 시간"으로 이해하기</h3>
+  <div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html" target="_blank" rel="noopener noreferrer">TRPL 10.3 Validating References with Lifetimes<span class="external-icon">↗</span></a></div>
+  <div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/reference/lifetime-elision.html" target="_blank" rel="noopener noreferrer">Rust Reference: Lifetime elision<span class="external-icon">↗</span></a></div>
+
+  <p>에러는 <code>E0106: missing lifetime specifier</code>입니다. 핵심 원리는 하나예요 — <strong>참조를 반환하는 함수는 그 반환 참조가 "어느 입력의 수명에 묶이는지"를 컴파일러에게 알려줘야 합니다.</strong> <code>longest</code>는 <code>if</code>에 따라 반환값이 <strong>s1일 수도 s2일 수도</strong> 있어서, 컴파일러는 반환 참조가 언제까지 안전한지 결정하지 못합니다. 그래서 당신이 직접 라벨(<code>'a</code>)을 붙여줘야 합니다.</p>
+
+  <div class="note info">
+    <div class="note-title">🧩 가장 중요한 오해 풀기 — <code>'a</code>는 "실제 수명"이 아니다</div>
+    <div class="note-body">
+      s1과 s2는 각자 자기만의 실제 수명이 있습니다(서로 다름). <code>'a</code>는 그 둘을 같게 만드는 게 아니라, <strong>"둘 다 살아있는 겹치는 구간(교집합)"</strong>의 이름입니다. 공식 문서도 <em>"반환 참조의 수명은 인자들의 수명 중 <strong>더 짧은 쪽</strong>과 같다"</em>고 말합니다.
+      <br><br>
+      비유: 친구 A는 3시까지, 친구 B는 5시까지 있어요. "셋이 <strong>같이</strong> 있을 수 있는 시간"은 자동으로 <strong>3시까지</strong>(더 짧은 쪽)입니다. <code>'a</code>가 바로 이 "같이 있는 시간"이고, 컴파일러가 실제 수명에서 겹치는 구간을 계산해 넣습니다.
+    </div>
+  </div>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block"><style>
+.dgbg{fill:#ffffff}.dgt{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dgl{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+.dgs{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dgv{font:bold 13px 'Consolas',monospace;fill:#111827}.dgv2{font:bold 11px 'Consolas',monospace;fill:#111827}
+.dgok{stroke:#2563eb;stroke-width:4;fill:none;stroke-linecap:round}
+.dggd{stroke:#059669;stroke-width:4;fill:none;stroke-linecap:round}
+.dgbad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dgokT{font:bold 12px 'Consolas',monospace;fill:#059669}.dgerT{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+.dgred{stroke:#dc2626;stroke-width:1.5;stroke-dasharray:5 4}.dghi{fill:#fde68a;opacity:.55}
+[data-theme=dark] .dgbg{fill:#1e1e1e}[data-theme=dark] .dgt{fill:#d4d4d4}[data-theme=dark] .dgl{fill:#d4d4d4}
+[data-theme=dark] .dgs{fill:#cccccc}[data-theme=dark] .dgv{fill:#9cdcfe}[data-theme=dark] .dgv2{fill:#9cdcfe}
+[data-theme=dark] .dgok{stroke:#569cd6}[data-theme=dark] .dggd{stroke:#4ec9b0}[data-theme=dark] .dgbad{stroke:#f48771}
+[data-theme=dark] .dgokT{fill:#4ec9b0}[data-theme=dark] .dgerT{fill:#f48771}[data-theme=dark] .dgred{stroke:#f48771}
+[data-theme=dark] .dghi{fill:#5a4a00;opacity:.55}
+</style>
+<rect width="640" height="210" class="dgbg"/>
+<text x="16" y="24" class="dgt">'a = s1·s2가 함께 살아있는 구간 (= 더 짧은 쪽)</text>
+<text x="16" y="68" class="dgv">s1</text>
+<line x1="150" y1="64" x2="588" y2="64" class="dgok"/>
+<text x="588" y="50" class="dgs" text-anchor="end">s1 끝 (오래 삶)</text>
+<text x="16" y="106" class="dgv">s2</text>
+<line x1="150" y1="102" x2="360" y2="102" class="dggd"/>
+<rect x="150" y="140" width="210" height="26" class="dghi" rx="3"/>
+<text x="16" y="158" class="dgv">'a</text>
+<line x1="150" y1="153" x2="360" y2="153" class="dgok"/>
+<text x="368" y="158" class="dgokT">← 교집합: 여기서만 반환값 안전</text>
+<line x1="360" y1="48" x2="360" y2="176" class="dgred"/>
+<text x="360" y="196" class="dgerT" text-anchor="middle">s2 끝 = 'a 끝 (더 짧은 쪽)</text>
+</svg>
+  </div>
+
+  <p>그래서 <code>longest</code>은 s1·s2·반환을 <strong>같은 <code>'a</code></strong>로 묶습니다. "같은 <code>'a</code>"는 s1·s2의 원본 수명을 같게 만드는 게 아니라, <strong>반환값을 안전하게 쓸 수 있는 범위를 둘의 교집합으로 좁힌다</strong>는 뜻입니다.</p>
+
+  <blockquote class="official-quote"><p>이 시그니처는 "어떤 수명 <code>'a</code>에 대해, 두 인자는 최소한 <code>'a</code> 동안 살아있고 반환 문자열 슬라이스도 최소한 <code>'a</code> 동안 유효하다"고 알려줍니다. <em>we're not changing the lifetimes of any values passed in or returned</em> — 값의 수명을 바꾸는 게 아니라, 이 제약을 지키지 않는 값을 빌림 검사기가 거부하게 하는 것입니다.</p><cite>— The Rust Programming Language, 10.3</cite></blockquote>
+
+  <div class="ex-label concept">예제 6-3-라 (해결): 'a로 묶은 완성 코드</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_lt_fix')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_lt_fix','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s6_lt_fix">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> <span class="fn">longest</span>&lt;'a&gt;(s1: &amp;'a <span class="tp">str</span>, s2: &amp;'a <span class="tp">str</span>) -&gt; &amp;'a <span class="tp">str</span> {</span></div><div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">if</span> s1.<span class="fn">len</span>() &gt; s2.<span class="fn">len</span>() { s1 } <span class="kw">else</span> { s2 }</span></div><div class="code-row"><span class="ln">3</span><span class="line">}</span></div><div class="code-row"><span class="ln">4</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">let</span> s1 = <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"long string"</span>);</span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="kw">let</span> s2 = <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"short"</span>);</span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, <span class="fn">longest</span>(&amp;s1, &amp;s2));  <span class="cm">// long string</span></span></div><div class="code-row"><span class="ln">8</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_lt_fix"></div>
+</div>
+
+  <h4>원본 변수 수명은 상관없나? — 있습니다, "하한선"으로</h4>
+  <p>s1·s2의 실제 수명은 무시되는 게 아니라 <code>'a</code>를 <strong>결정하는 재료</strong>입니다. 호출할 때마다 컴파일러가 실제 수명의 <strong>교집합</strong>으로 <code>'a</code>를 정합니다. 그래서 반환값을 그 교집합 밖에서 쓰면 막힙니다.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 224" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block"><style>
+.dgbg{fill:#ffffff}.dgt{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dgs{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}.dgv{font:bold 13px 'Consolas',monospace;fill:#111827}
+.dgok{stroke:#2563eb;stroke-width:4;fill:none;stroke-linecap:round}.dggd{stroke:#059669;stroke-width:4;fill:none;stroke-linecap:round}
+.dgbad{stroke:#dc2626;stroke-width:3;fill:none;stroke-dasharray:6 4;stroke-linecap:round}
+.dgerT{font:bold 12px 'Consolas',monospace;fill:#dc2626}.dgred{stroke:#dc2626;stroke-width:1.5;stroke-dasharray:5 4}.dghi{fill:#fde68a;opacity:.55}
+[data-theme=dark] .dgbg{fill:#1e1e1e}[data-theme=dark] .dgt{fill:#d4d4d4}[data-theme=dark] .dgs{fill:#cccccc}
+[data-theme=dark] .dgv{fill:#9cdcfe}[data-theme=dark] .dgok{stroke:#569cd6}[data-theme=dark] .dggd{stroke:#4ec9b0}
+[data-theme=dark] .dgbad{stroke:#f48771}[data-theme=dark] .dgerT{fill:#f48771}[data-theme=dark] .dgred{stroke:#f48771}[data-theme=dark] .dghi{fill:#5a4a00;opacity:.55}
+</style>
+<rect width="640" height="224" class="dgbg"/>
+<text x="16" y="24" class="dgt">반환값이 'a(교집합)를 벗어나 사용되면 → 컴파일 에러</text>
+<text x="16" y="66" class="dgv">s1</text>
+<line x1="150" y1="62" x2="588" y2="62" class="dgok"/>
+<text x="16" y="104" class="dgv">s2</text>
+<line x1="150" y1="100" x2="330" y2="100" class="dggd"/>
+<line x1="330" y1="46" x2="330" y2="206" class="dgred"/>
+<text x="330" y="204" class="dgerT" text-anchor="middle">s2 drop = 'a 끝</text>
+<rect x="150" y="132" width="180" height="24" class="dghi" rx="3"/>
+<text x="16" y="149" class="dgv">'a</text>
+<line x1="150" y1="144" x2="330" y2="144" class="dgok"/>
+<text x="16" y="187" class="dgv">result</text>
+<line x1="150" y1="182" x2="330" y2="182" class="dggd"/>
+<line x1="330" y1="182" x2="520" y2="182" class="dgbad"/>
+<text x="425" y="176" class="dgerT" text-anchor="middle">여기서 사용 → ❌ 'a 밖</text>
+<text x="527" y="186" class="dgs">println!</text>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 6-3-마 (에러 실감): result가 s2(='a)보다 오래 살면 거부</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_lt_dangle')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_lt_dangle','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s6_lt_dangle">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> <span class="fn">longest</span>&lt;'a&gt;(s1: &amp;'a <span class="tp">str</span>, s2: &amp;'a <span class="tp">str</span>) -&gt; &amp;'a <span class="tp">str</span> {</span></div><div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">if</span> s1.<span class="fn">len</span>() &gt; s2.<span class="fn">len</span>() { s1 } <span class="kw">else</span> { s2 }</span></div><div class="code-row"><span class="ln">3</span><span class="line">}</span></div><div class="code-row"><span class="ln">4</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">let</span> s1 = <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"long string"</span>);</span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="kw">let</span> result;</span></div><div class="code-row"><span class="ln">7</span><span class="line">    {</span></div><div class="code-row"><span class="ln">8</span><span class="line">        <span class="kw">let</span> s2 = <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"short"</span>);</span></div><div class="code-row"><span class="ln">9</span><span class="line">        result = <span class="fn">longest</span>(&amp;s1, &amp;s2);  <span class="cm">// 'a = s2의 짧은 수명</span></span></div><div class="code-row"><span class="ln">10</span><span class="line">    }                                 <span class="cm">// ← s2 drop, 'a 끝남</span></span></div><div class="code-row"><span class="ln">11</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, result);           <span class="cm">// ❌ E0597: 'a 밖에서 사용</span></span></div><div class="code-row"><span class="ln">12</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_lt_dangle"></div>
+</div>
+  <div class="note er">
+    <div class="note-title">❌ E0597: `s2` does not live long enough</div>
+    <div class="note-body">
+      <code>'a</code>는 s1의 긴 수명이 아니라 <strong>s2의 짧은 수명</strong>으로 잡힙니다(더 짧은 쪽). 그래서 <code>result</code>를 s2가 죽은 뒤(=<code>'a</code> 밖)에 쓰면 컴파일 단계에서 막힙니다. 원본 수명이 <code>'a</code>를 정하므로 당연히 상관있습니다 — 다만 "같은 수명으로 만든다"가 아니라 "겹치는 구간을 <code>'a</code>로 잡는다"입니다.
+    </div>
+  </div>
+
+  <h4>왜 어떤 땐 자동인가 — 생략 규칙(elision)</h4>
+  <p>Rust는 흔한 경우 수명을 자동으로 채웁니다. 공식 Reference의 규칙은 이렇습니다: ① 참조인 각 인자는 <strong>자기만의 수명</strong>을 받는다. ② <strong>입력 수명이 딱 하나면</strong> 그 수명을 모든 출력에 준다. ③ 메서드에서 <code>&amp;self</code>/<code>&amp;mut self</code>가 있으면 self의 수명을 출력에 준다. <code>longest</code>는 입력이 <strong>둘</strong>이고 self도 없어 ②·③ 어디에도 안 걸려 자동 추론이 실패합니다. 실제로 Reference는 <code>fn frob(s: &amp;str, t: &amp;str) -&gt; &amp;str</code>를 <strong>ILLEGAL</strong>로 명시합니다.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 196" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block"><style>
+.dgbg{fill:#ffffff}.dgt{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dgl{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}.dgs{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+.dgv{font:bold 13px 'Consolas',monospace;fill:#111827}.dgv2{font:bold 11px 'Consolas',monospace;fill:#111827}
+.dgokT{font:bold 12px 'Consolas',monospace;fill:#059669}.dgerT{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+[data-theme=dark] .dgbg{fill:#1e1e1e}[data-theme=dark] .dgt{fill:#d4d4d4}[data-theme=dark] .dgl{fill:#d4d4d4}
+[data-theme=dark] .dgs{fill:#cccccc}[data-theme=dark] .dgv{fill:#9cdcfe}[data-theme=dark] .dgv2{fill:#9cdcfe}
+[data-theme=dark] .dgokT{fill:#4ec9b0}[data-theme=dark] .dgerT{fill:#f48771}
+</style>
+<rect width="640" height="196" class="dgbg"/>
+<text x="16" y="24" class="dgt">입력 참조 1개 → 자동 / 2개(self 없음) → 모호 → 명시 필요</text>
+<rect x="16" y="42" width="296" height="132" rx="6" fill="none" stroke="#059669" stroke-width="1.5"/>
+<text x="30" y="68" class="dgl">입력 참조 1개</text>
+<text x="30" y="94" class="dgv">fn f(s: &amp;str) -&gt; &amp;str</text>
+<text x="30" y="122" class="dgs">규칙②: 그 하나의 수명을</text>
+<text x="30" y="140" class="dgs">반환에 자동 부여</text>
+<text x="30" y="166" class="dgokT">✓ 'a 생략 가능</text>
+<rect x="328" y="42" width="296" height="132" rx="6" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+<text x="342" y="68" class="dgl">입력 참조 2개 (self 없음)</text>
+<text x="342" y="94" class="dgv2">fn longest(s1: &amp;str, s2: &amp;str) -&gt; &amp;str</text>
+<text x="342" y="122" class="dgs">어느 쪽 수명을 반환에?</text>
+<text x="342" y="140" class="dgs">→ 모호해서 추론 실패</text>
+<text x="342" y="166" class="dgerT">❌ 'a 직접 명시 필요</text>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 6-3-바: 입력 1개는 'a 없이도 컴파일 (생략 규칙)</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_lt_elision')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_lt_elision','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s6_lt_elision">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 입력 참조 1개 → 생략 규칙으로 'a 자동 (표기 불필요)</span></span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> <span class="fn">first_word</span>(s: &amp;<span class="tp">str</span>) -&gt; &amp;<span class="tp">str</span> {</span></div><div class="code-row"><span class="ln">3</span><span class="line">    s.<span class="fn">split</span>(<span class="st">' '</span>).<span class="fn">next</span>().<span class="fn">unwrap_or</span>(s)</span></div><div class="code-row"><span class="ln">4</span><span class="line">}</span></div><div class="code-row"><span class="ln">5</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="kw">let</span> s = <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"hello world"</span>);</span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, <span class="fn">first_word</span>(&amp;s));  <span class="cm">// hello</span></span></div><div class="code-row"><span class="ln">8</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_lt_elision"></div>
+</div>
+
+  <h4>언제 <code>'a</code> 하나, 언제 <code>'a</code>·<code>'b</code> 둘인가</h4>
+  <p>반환값이 <strong>둘 중 아무거나</strong>일 수 있으면(→ <code>longest</code>) 반드시 둘을 <strong>같은 <code>'a</code></strong>로 묶습니다. 반대로 반환값이 <strong>한 입력에만</strong> 의존하면, 그 입력만 <code>'a</code>로 하고 나머지는 무관한 <code>'b</code>로 나눕니다. 이렇게 나누면 "두 인자의 수명은 서로 독립"이라고 알려주는 것이라, 호출부에서 두 인자의 수명이 달라도 문제가 없습니다.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 204" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block"><style>
+.dgbg{fill:#ffffff}.dgt{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+.dgs{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}.dgv{font:bold 13px 'Consolas',monospace;fill:#111827}
+[data-theme=dark] .dgbg{fill:#1e1e1e}[data-theme=dark] .dgt{fill:#d4d4d4}[data-theme=dark] .dgs{fill:#cccccc}[data-theme=dark] .dgv{fill:#9cdcfe}
+</style>
+<rect width="640" height="204" class="dgbg"/>
+<text x="16" y="24" class="dgt">'a 하나 vs 'a·'b 둘 — 반환이 무엇에 의존하는가</text>
+<rect x="16" y="40" width="608" height="70" rx="6" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+<text x="30" y="66" class="dgv">fn longest&lt;'a&gt;(x: &amp;'a str, y: &amp;'a str) -&gt; &amp;'a str</text>
+<text x="30" y="96" class="dgs">반환이 x일 수도 y일 수도 → 둘을 같은 'a로 묶어야 함</text>
+<rect x="16" y="122" width="608" height="70" rx="6" fill="none" stroke="#059669" stroke-width="1.5"/>
+<text x="30" y="148" class="dgv">fn first&lt;'a, 'b&gt;(x: &amp;'a str, y: &amp;'b str) -&gt; &amp;'a str</text>
+<text x="30" y="178" class="dgs">반환은 x에서만 → x는 'a, y는 무관한 'b (수명 서로 독립)</text>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 6-3-사: 반환이 x에만 의존 → 'a·'b로 분리 (안전하게 컴파일)</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s6_lt_ab')">복사</button>
+<button class="run-btn" onclick="runCode('r_s6_lt_ab','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s6_lt_ab">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// 반환이 x에만 의존 → x는 'a, y는 무관한 'b</span></span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> <span class="fn">first</span>&lt;'a, 'b&gt;(x: &amp;'a <span class="tp">str</span>, _y: &amp;'b <span class="tp">str</span>) -&gt; &amp;'a <span class="tp">str</span> {</span></div><div class="code-row"><span class="ln">3</span><span class="line">    x</span></div><div class="code-row"><span class="ln">4</span><span class="line">}</span></div><div class="code-row"><span class="ln">5</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="kw">let</span> x = <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"keep me"</span>);</span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> result;</span></div><div class="code-row"><span class="ln">8</span><span class="line">    {</span></div><div class="code-row"><span class="ln">9</span><span class="line">        <span class="kw">let</span> y = <span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"temp"</span>);</span></div><div class="code-row"><span class="ln">10</span><span class="line">        result = <span class="fn">first</span>(&amp;x, &amp;y);  <span class="cm">// 반환은 x에서 옴 → y 수명 무관</span></span></div><div class="code-row"><span class="ln">11</span><span class="line">    }                             <span class="cm">// y drop되어도</span></span></div><div class="code-row"><span class="ln">12</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, result);       <span class="cm">// ✓ result는 x('a)에 묶임 → 안전</span></span></div><div class="code-row"><span class="ln">13</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s6_lt_ab"></div>
+</div>
+
+  <div class="note ok">
+    <div class="note-title">✅ 한 줄 요약</div>
+    <div class="note-body">
+      <ul>
+        <li><code>'a</code>는 s1·s2의 실제 수명이 아니라, <strong>둘 다 살아있는 겹치는 구간(교집합)</strong>의 라벨 — 더 짧은 쪽으로 잡힘.</li>
+        <li>같은 <code>'a</code>를 붙이는 이유: 반환이 둘 중 무엇일지 모르니, <strong>둘의 교집합 안에서만</strong> 안전하다고 못박기 위해.</li>
+        <li>원본 수명은 무시되는 게 아니라 <code>'a</code>를 정하는 근거(더 짧은 쪽이 <code>'a</code>).</li>
+        <li>입력 참조가 1개면 생략 규칙으로 자동, <strong>2개(self 없음)면 모호</strong>해서 직접 명시. 반환이 한 입력에만 의존하면 <code>'a</code>·<code>'b</code>로 분리.</li>
+      </ul>
+    </div>
+  </div>
+
 
   <h3>🟢 해결 방법</h3>
   <p><code>'a</code>로 두 입력과 반환이 같은 수명임을 명시합니다.</p>
@@ -9018,6 +9232,345 @@ This is key to understanding why it returns ().</code></pre>
     </div>
   </div>
 
+
+  <!-- ===== s8 Part 8 (추가 삽입: 메서드 호출의 정체 — x.f() = f(x)) ===== -->
+  <div class="part-h" id="s8-part8">Part 8. 메서드 호출의 정체 — <code>x.f()</code> = <code>f(x)</code> <small style="color:#e06c75">← 대화 정리 추가</small></div>
+  <div class="part-desc"><p>C를 오래 한 사람이 <code>raw.round()</code>나 <code>"str".xxx()</code>가 낯선 건 <strong>개념이 새로워서가 아니라 문법이 새로워서</strong>입니다. 점(<code>.</code>)은 "이 값을 함수의 <strong>첫 번째 인자</strong>로 넘긴다"는 문법 설탕일 뿐입니다. <code>self</code>의 정체, 메서드 해석 절차(autoref), 원시타입 <code>f64::round</code>까지 공식 문서로 정리합니다.</p></div>
+  <div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/reference/expressions/method-call-expr.html" target="_blank" rel="noopener noreferrer">Reference: Method call expressions<span class="external-icon">↗</span></a></div>
+  <div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/book/ch05-03-method-syntax.html" target="_blank" rel="noopener noreferrer">TRPL 5.3 Method Syntax<span class="external-icon">↗</span></a></div>
+
+  <style>
+  .m8bg{fill:#ffffff}.m8t{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+  .m8l{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+  .m8s{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+  .m8v{font:bold 13px 'Consolas',monospace;fill:#111827}.m8v2{font:bold 12px 'Consolas',monospace;fill:#111827}
+  .m8ok{font:bold 12px 'Consolas',monospace;fill:#059669}.m8b{font:bold 12px 'Consolas',monospace;fill:#2563eb}
+  .m8ar{stroke:#2563eb;stroke-width:2;fill:none}
+  [data-theme=dark] .m8bg{fill:#1e1e1e}[data-theme=dark] .m8t{fill:#d4d4d4}[data-theme=dark] .m8l{fill:#d4d4d4}
+  [data-theme=dark] .m8s{fill:#cccccc}[data-theme=dark] .m8v{fill:#9cdcfe}[data-theme=dark] .m8v2{fill:#9cdcfe}
+  [data-theme=dark] .m8ok{fill:#4ec9b0}[data-theme=dark] .m8b{fill:#569cd6}[data-theme=dark] .m8ar{stroke:#569cd6}
+  </style>
+
+  <h4>1) 점은 "이 값을 첫 인자로" — <code>x.f(y)</code> = <code>f(x, y)</code></h4>
+  <p>C에서 이미 매일 하던 일입니다: <code>strlen(s)</code>, <code>fclose(fp)</code>, <code>list_push(list, item)</code> — <strong>첫 인자가 '동작의 대상'</strong>이죠. 객체지향 스타일 C의 <code>foo_do_something(foo, ...)</code> 관례를 언어 문법으로 못박은 것이 메서드입니다. <code>x.f(y)</code>를 <code>f(x, y)</code>로 바꿔 읽으면 됩니다.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="210" class="m8bg"/>
+<text x="16" y="24" class="m8t">점(.)은 왼쪽 값을 첫 인자로 옮기는 문법 설탕</text>
+<text x="40" y="66" class="m8v">x.f(y)</text>
+<text x="150" y="66" class="m8l">≡</text>
+<text x="190" y="66" class="m8v">f(x, y)</text>
+<path d="M 55 74 C 90 104, 200 104, 210 76" class="m8ar" marker-end="url(#m8a)"/>
+<text x="120" y="112" class="m8s">x가 첫 인자로 이동</text>
+<line x1="24" y1="126" x2="616" y2="126" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="16" y="150" class="m8l">체이닝 — 읽는 순서 = 실행 순서</text>
+<text x="30" y="174" class="m8ok">s.trim().to_lowercase().replace("a","b")</text>
+<text x="30" y="196" class="m8s">함수 중첩 replace(to_lowercase(trim(s)),..) 은 안쪽부터 거꾸로 — 점 문법이 더 읽기 쉬움</text>
+<defs><marker id="m8a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/></marker></defs>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 8-8-가: raw.round() == f64::round(raw), 그리고 체이닝</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_mc_round')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_mc_round','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s8_mc_round">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> raw = 3.14159_f64;</span></div><div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> a = raw.<span class="fn">round</span>();        <span class="cm">// 메서드 문법</span></span></div><div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> b = <span class="tp">f64</span>::<span class="fn">round</span>(raw);    <span class="cm">// 완전 정규화 — 동일</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{a} {b}"</span>);        <span class="cm">// 3 3</span></span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="cm">// 체이닝: 읽는 순서 = 실행 순서</span></span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> s = <span class="st">"  Hello  "</span>.<span class="fn">trim</span>().<span class="fn">to_lowercase</span>();</span></div><div class="code-row"><span class="ln">8</span><span class="line">    <span class="fn">println!</span>(<span class="st">"[{s}]"</span>);          <span class="cm">// [hello]</span></span></div><div class="code-row"><span class="ln">9</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_mc_round"></div>
+</div>
+
+  <h4>2) <code>self</code>는 '숨은 포인터'가 아니라 첫 매개변수 이름</h4>
+  <p>C++/Java의 <code>this</code>와 달리, Rust의 <code>self</code>는 <strong>첫 번째 매개변수 이름일 뿐이고 타입이 생략된 것</strong>입니다. <code>fn round(self) -&gt; f64</code>는 <code>fn round(self: f64) -&gt; f64</code>의 축약입니다. C로 치면 첫 인자 이름을 'self'라 지은 평범한 함수예요.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 176" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="176" class="m8bg"/>
+<text x="16" y="24" class="m8t">self = 첫 매개변수 이름 (타입 생략) — 숨은 포인터 아님</text>
+<text x="30" y="60" class="m8v">fn round(self) -&gt; f64</text>
+<text x="330" y="60" class="m8l">는 아래의 축약</text>
+<text x="30" y="88" class="m8b">fn round(self: f64) -&gt; f64</text>
+<line x1="24" y1="104" x2="616" y2="104" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="16" y="128" class="m8l">C 비유 — 첫 인자 이름을 self라 지은 평범한 함수</text>
+<text x="30" y="152" class="m8v2">double f64_round(double self) { ... }</text>
+<text x="30" y="170" class="m8s">Rust는 매개변수 이름이 self인 함수에 한해 raw.round() 라는 추가 문법을 허용할 뿐.</text>
+</svg>
+  </div>
+
+  <blockquote class="official-quote"><p>struct의 <code>self</code>도 마찬가지입니다. <code>fn distance(&amp;self)</code>는 <code>fn distance(self: &amp;Point)</code>의 축약이라, <em>distance는 &amp;Point 하나를 받아 f64를 돌려주는 함수</em>입니다. 그래서 <code>p.distance()</code>와 <code>Point::distance(&amp;p)</code>는 같은 호출입니다. <code>self</code>의 세 형태는 C의 포인터/const 구분에 대응합니다: <code>&amp;self</code>=<code>const Point*</code>(읽기), <code>&amp;mut self</code>=<code>Point*</code>(수정), <code>self</code>=값 통째 이동.</p><cite>— The Rust Reference / TRPL 5.3</cite></blockquote>
+
+  <div class="ex-label concept">예제 8-8-나: p.distance() == Point::distance(&p), self 세 형태</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_mc_point')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_mc_point','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s8_mc_point">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">struct</span> <span class="tp">Point</span> { x: <span class="tp">f64</span>, y: <span class="tp">f64</span> }</span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">impl</span> <span class="tp">Point</span> {</span></div><div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">fn</span> <span class="fn">distance</span>(&amp;<span class="kw">self</span>) -&gt; <span class="tp">f64</span> {          <span class="cm">// &self: 읽기 전용</span></span></div><div class="code-row"><span class="ln">4</span><span class="line">        (<span class="kw">self</span>.x * <span class="kw">self</span>.x + <span class="kw">self</span>.y * <span class="kw">self</span>.y).<span class="fn">sqrt</span>()</span></div><div class="code-row"><span class="ln">5</span><span class="line">    }</span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="kw">fn</span> <span class="fn">scale</span>(&amp;<span class="kw">mut self</span>, k: <span class="tp">f64</span>) {        <span class="cm">// &mut self: 수정</span></span></div><div class="code-row"><span class="ln">7</span><span class="line">        <span class="kw">self</span>.x *= k; <span class="kw">self</span>.y *= k;</span></div><div class="code-row"><span class="ln">8</span><span class="line">    }</span></div><div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">fn</span> <span class="fn">into_tuple</span>(<span class="kw">self</span>) -&gt; (<span class="tp">f64</span>, <span class="tp">f64</span>) {  <span class="cm">// self: 소유권 소비</span></span></div><div class="code-row"><span class="ln">10</span><span class="line">        (<span class="kw">self</span>.x, <span class="kw">self</span>.y)</span></div><div class="code-row"><span class="ln">11</span><span class="line">    }</span></div><div class="code-row"><span class="ln">12</span><span class="line">}</span></div><div class="code-row"><span class="ln">13</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">14</span><span class="line">    <span class="kw">let</span> <span class="kw">mut</span> p = <span class="tp">Point</span> { x: 3.0, y: 4.0 };</span></div><div class="code-row"><span class="ln">15</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, p.<span class="fn">distance</span>());          <span class="cm">// 5</span></span></div><div class="code-row"><span class="ln">16</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, <span class="tp">Point</span>::<span class="fn">distance</span>(&amp;p));   <span class="cm">// 5 — 완전 정규화, 동일</span></span></div><div class="code-row"><span class="ln">17</span><span class="line">    p.<span class="fn">scale</span>(2.0);</span></div><div class="code-row"><span class="ln">18</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{:?}"</span>, p.<span class="fn">into_tuple</span>());      <span class="cm">// (6.0, 8.0)</span></span></div><div class="code-row"><span class="ln">19</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_mc_point"></div>
+</div>
+
+  <h4>3) 컴파일러의 메서드 해석 절차 (autoref/autoderef)</h4>
+  <p>Reference에 절차가 명시돼 있습니다. ① <strong>후보 리시버 타입 목록</strong>을 만든다 — 리시버 타입을 반복 역참조(deref)하며 나오는 타입을 모으고, 각 타입 <code>T</code>마다 <code>&amp;T</code>·<code>&amp;mut T</code>를 바로 뒤에 덧붙인다. ② 각 후보 타입에서 <strong>inherent 메서드를 먼저</strong> 찾고, 없으면 스코프의 트레잇 메서드를 찾는다. 필요하면 컴파일러가 <code>&amp;</code>를 자동으로 붙여줍니다(autoref).</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 226" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="226" class="m8bg"/>
+<text x="16" y="24" class="m8t">후보 리시버 목록 → inherent 먼저, 순서대로 탐색</text>
+<text x="16" y="58" class="m8l">raw : f64 — 더 deref 안 됨</text>
+<text x="30" y="82" class="m8v2">후보: [ f64 , &amp;f64 , &amp;mut f64 ]</text>
+<text x="30" y="102" class="m8ok">→ 첫 후보 f64에서 round(self) 발견 → 종료 (autoref 없음)</text>
+<line x1="24" y1="118" x2="616" y2="118" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="16" y="146" class="m8l">p : Point — distance는 &amp;Point를 받음</text>
+<text x="30" y="170" class="m8v2">후보: [ Point , &amp;Point , &amp;mut Point ]</text>
+<text x="30" y="190" class="m8ok">→ &amp;Point에서 distance 발견 → p를 자동으로 &amp;p로 빌림 (autoref)</text>
+<text x="16" y="214" class="m8s">여러 후보가 동시에 걸리면 에러 → 완전 정규화로 지목 (Part 10).</text>
+</svg>
+  </div>
+
+  <blockquote class="official-quote"><p>리시버가 <code>Box&lt;[i32;2]&gt;</code>면 후보는 <code>Box&lt;[i32;2]&gt;</code>, <code>&amp;Box&lt;…&gt;</code>, <code>&amp;mut Box&lt;…&gt;</code>, <code>[i32;2]</code>(deref), <code>&amp;[i32;2]</code>, … 순으로 만들어지고, 각 타입에서 <em>inherent 메서드 → 보이는 트레잇 메서드</em> 순으로 찾습니다. 탐색은 타입 순서대로라 <code>&amp;self</code> 메서드가 <code>&amp;mut self</code>보다 먼저 발견되는 등의 결과가 나옵니다.</p><cite>— The Rust Reference, Method call expressions</cite></blockquote>
+
+  <h4>4) 전제 조건 — 리시버 타입이 확정돼 있어야 한다</h4>
+  <p><code>raw.round()</code>가 <code>f64::round(raw)</code>로 풀리려면 <strong><code>raw</code>의 타입이 f64로 확정</strong>돼 있어야 합니다. 타입이 안 정해지면 어느 타입의 메서드인지 못 골라 에러가 납니다.</p>
+
+  <div class="ex-label concept">예제 8-8-다 (에러 실감): 타입 미확정 → 메서드 못 찾음</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_mc_infer')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_mc_infer','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s8_mc_infer">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> raw = 3.14159;          <span class="cm">// f64로 추론 → OK</span></span></div><div class="code-row"><span class="ln">3</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, raw.<span class="fn">round</span>());</span></div><div class="code-row"><span class="ln">4</span><span class="line">    <span class="cm">// 아래는 타입을 못 정해 에러:</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">let</span> x = <span class="st">"3.14"</span>.<span class="fn">parse</span>().<span class="fn">unwrap</span>();  <span class="cm">// 무슨 타입인지 모름</span></span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, x.<span class="fn">round</span>());  <span class="cm">// error: type annotations needed</span></span></div><div class="code-row"><span class="ln">7</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_mc_infer"></div>
+</div>
+  <div class="note info">
+    <div class="note-title">🔧 고치는 법</div>
+    <div class="note-body">
+      <code>let x = "3.14".parse::&lt;f64&gt;().unwrap();</code>(터보피시) 또는 <code>let x: f64 = "3.14".parse().unwrap();</code>(변수 타입)로 타입을 알려주면 <code>x.round()</code>가 <code>f64::round(x)</code>로 정상 해석됩니다. (parse/터보피시 자세히는 트레잇 섹션 Part 9 참고.)
+    </div>
+  </div>
+
+  <div class="note ok">
+    <div class="note-title">✅ 한 줄 요약</div>
+    <div class="note-body">
+      <ul>
+        <li><code>x.f(y)</code> = <code>f(x, y)</code>. 점은 왼쪽 값을 <strong>첫 인자</strong>로 옮기는 문법 설탕(C의 <code>foo_do(foo,…)</code> 관례).</li>
+        <li><code>self</code>는 숨은 포인터가 아니라 <strong>첫 매개변수 이름</strong>(타입 생략). <code>p.distance()</code> = <code>Point::distance(&amp;p)</code>.</li>
+        <li>메서드 해석: 후보 리시버 목록(deref 반복 + <code>&amp;T</code>/<code>&amp;mut T</code>) → <strong>inherent 먼저</strong>, 필요 시 autoref로 <code>&amp;</code> 자동 부여.</li>
+        <li>단, <strong>리시버 타입이 확정</strong>돼 있어야 한다 — 안 되면 type annotations needed.</li>
+      </ul>
+    </div>
+  </div>
+
+
+
+  <!-- ===== s8 Part 9 (보강 추가: 모듈과 가시성) ===== -->
+  <div class="part-h" id="s8-part9">Part 9. 모듈과 가시성 — <code>mod</code> · <code>pub</code> · <code>use</code> 경로 <small style="color:#e06c75">← 보강 추가</small></div>
+  <div class="part-desc"><p>Java의 <strong>패키지 + 접근제어자</strong>에 해당합니다. 단 Rust는 <strong>전부 비공개(private)가 기본</strong>이고, <code>pub</code>로 하나씩 열어줍니다. <code>mod</code>로 묶고, <code>crate::</code>/<code>super::</code>/<code>self::</code> 경로로 가리키며, <code>use</code>로 긴 경로를 줄입니다.</p></div>
+  <div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/book/ch07-02-defining-modules-to-control-scope-and-privacy.html" target="_blank" rel="noopener noreferrer">TRPL §7 Managing Growing Projects (Modules)<span class="external-icon">↗</span></a></div>
+
+  <style>
+  .mdbg{fill:#ffffff}.mdt{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+  .mdl{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+  .mds{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+  .mdv{font:bold 12px 'Consolas',monospace;fill:#111827}
+  .mdok{font:bold 12px 'Consolas',monospace;fill:#059669}.mder{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+  .mdbox{fill:none;stroke:#374151;stroke-width:1.4}.mdln{stroke:#2563eb;stroke-width:1.6;fill:none}
+  [data-theme=dark] .mdbg{fill:#1e1e1e}[data-theme=dark] .mdt{fill:#d4d4d4}[data-theme=dark] .mdl{fill:#d4d4d4}
+  [data-theme=dark] .mds{fill:#cccccc}[data-theme=dark] .mdv{fill:#9cdcfe}
+  [data-theme=dark] .mdok{fill:#4ec9b0}[data-theme=dark] .mder{fill:#f48771}
+  [data-theme=dark] .mdbox{stroke:#cccccc}[data-theme=dark] .mdln{stroke:#569cd6}
+  </style>
+
+  <h4>1) 전부 private가 기본 — <code>pub</code>로 연다</h4>
+  <p>Java/C++와 달리 Rust는 <strong>모듈 밖에서는 아무것도 안 보이는 게 기본</strong>입니다(모듈·함수·struct·enum·필드 전부). 부모 모듈에서 쓰려면 <code>pub</code>를 붙여 명시적으로 공개합니다. 같은 모듈 <strong>안에서는</strong> private끼리 자유롭게 접근됩니다.</p>
+
+  <div class="ex-label concept">예제 8-9-가: mod + pub + private (E0603)</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_mod_basic')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_mod_basic','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s8_mod_basic">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">mod</span> kitchen {</span></div><div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">pub</span> <span class="kw">fn</span> <span class="fn">prepare</span>() -&gt; <span class="tp">String</span> {</span></div><div class="code-row"><span class="ln">3</span><span class="line">        <span class="fn">format!</span>(<span class="st">"요리 완성: {}"</span>, <span class="fn">secret_sauce</span>())  <span class="cm">// 같은 모듈 → private 접근 OK</span></span></div><div class="code-row"><span class="ln">4</span><span class="line">    }</span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">fn</span> <span class="fn">secret_sauce</span>() -&gt; &amp;<span class="lf">'static</span> <span class="tp">str</span> { <span class="st">"비밀 소스"</span> }  <span class="cm">// private</span></span></div><div class="code-row"><span class="ln">6</span><span class="line">}</span></div><div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">8</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, kitchen::<span class="fn">prepare</span>());        <span class="cm">// OK (pub)</span></span></div><div class="code-row"><span class="ln">9</span><span class="line">    <span class="cm">// println!("{}", kitchen::secret_sauce()); // ❌ E0603: private</span></span></div><div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_mod_basic"></div>
+</div>
+
+  <h4>2) 경로 — <code>crate::</code>(절대) / <code>super::</code>(부모) / <code>self::</code>(현재)</h4>
+  <p><code>crate::</code>는 크레이트 루트(파일 트리의 최상단)에서 시작하는 <strong>절대 경로</strong>, <code>super::</code>는 <strong>부모 모듈</strong>(파일 경로의 <code>..</code>), <code>self::</code>는 <strong>현재 모듈</strong>입니다. <code>use</code>는 긴 경로를 짧게 만드는 단축키입니다.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 190" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="190" class="mdbg"/>
+<text x="16" y="24" class="mdt">모듈 트리와 경로 키워드</text>
+<rect x="250" y="40" width="140" height="34" rx="6" class="mdbox"/>
+<text x="320" y="62" class="mdv" text-anchor="middle">crate (루트)</text>
+<rect x="250" y="96" width="140" height="34" rx="6" class="mdbox"/>
+<text x="320" y="118" class="mdv" text-anchor="middle">mod math</text>
+<rect x="250" y="152" width="180" height="30" rx="6" class="mdbox"/>
+<text x="340" y="172" class="mdv" text-anchor="middle">mod advanced</text>
+<path d="M 320 74 L 320 96" class="mdln"/>
+<path d="M 320 130 L 340 152" class="mdln"/>
+<text x="410" y="60" class="mdok">crate:: → 여기서 시작(절대)</text>
+<text x="450" y="116" class="mdok">super:: → 부모(math)</text>
+<text x="16" y="118" class="mds">self:: → 현재 모듈</text>
+<text x="16" y="172" class="mds">use는 경로 단축. 관례: 함수는 부모 모듈을, 타입은 아이템 자체를 import.</text>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 8-9-나: crate / super 경로 + use</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_mod_path')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_mod_path','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s8_mod_path">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">mod</span> math {</span></div><div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">pub</span> <span class="kw">fn</span> <span class="fn">square</span>(x: <span class="tp">i32</span>) -&gt; <span class="tp">i32</span> { x * x }</span></div><div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">pub</span> <span class="kw">mod</span> advanced {</span></div><div class="code-row"><span class="ln">4</span><span class="line">        <span class="cm">// super = 부모 모듈(math)</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">        <span class="kw">pub</span> <span class="kw">fn</span> <span class="fn">cube</span>(x: <span class="tp">i32</span>) -&gt; <span class="tp">i32</span> { <span class="kw">super</span>::<span class="fn">square</span>(x) * x }</span></div><div class="code-row"><span class="ln">6</span><span class="line">    }</span></div><div class="code-row"><span class="ln">7</span><span class="line">}</span></div><div class="code-row"><span class="ln">8</span><span class="line"><span class="kw">use</span> <span class="kw">self</span>::math::advanced;    <span class="cm">// self:: 경로 (모든 에디션 호환)</span></span></div><div class="code-row"><span class="ln">9</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">10</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, math::<span class="fn">square</span>(4));    <span class="cm">// 16</span></span></div><div class="code-row"><span class="ln">11</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, advanced::<span class="fn">cube</span>(3));  <span class="cm">// 27</span></span></div><div class="code-row"><span class="ln">12</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_mod_path"></div>
+</div>
+
+  <h4>3) 함정 — <code>pub struct</code>여도 필드는 여전히 private</h4>
+  <p>struct에 <code>pub</code>를 붙여도 <strong>필드는 각각 <code>pub</code>를 붙여야</strong> 외부에서 보입니다(캡슐화 기본). 반면 <strong><code>pub enum</code>의 variant는 자동으로 공개</strong>됩니다. Java에서 필드마다 접근제어자를 다는 것과 비슷하되, 기본이 더 엄격합니다.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 168" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="168" class="mdbg"/>
+<text x="16" y="24" class="mdt">pub struct 필드는 각각 pub 필요 · pub enum variant는 자동 공개</text>
+<rect x="16" y="42" width="300" height="106" rx="6" class="mdbox"/>
+<text x="30" y="66" class="mdv">pub struct Rect {</text>
+<text x="46" y="88" class="mdok">pub width: f64,   // 외부 보임</text>
+<text x="46" y="110" class="mder">height: f64,      // 여전히 private</text>
+<text x="30" y="132" class="mdv">}</text>
+<rect x="328" y="42" width="296" height="106" rx="6" class="mdbox"/>
+<text x="342" y="66" class="mdv">pub enum Shape {</text>
+<text x="358" y="88" class="mdok">Circle(f64),  // 자동 공개</text>
+<text x="358" y="110" class="mdok">Square(f64),  // 자동 공개</text>
+<text x="342" y="132" class="mdv">}</text>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 8-9-다: pub struct 필드 가시성 + pub enum variant</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_mod_vis')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_mod_vis','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s8_mod_vis">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">mod</span> shapes {</span></div><div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">pub</span> <span class="kw">struct</span> <span class="tp">Rect</span> {</span></div><div class="code-row"><span class="ln">3</span><span class="line">        <span class="kw">pub</span> width: <span class="tp">f64</span>,   <span class="cm">// 필드도 pub → 외부 접근 가능</span></span></div><div class="code-row"><span class="ln">4</span><span class="line">        height: <span class="tp">f64</span>,       <span class="cm">// pub 없음 → 외부에서 못 봄</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">    }</span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="kw">impl</span> <span class="tp">Rect</span> {</span></div><div class="code-row"><span class="ln">7</span><span class="line">        <span class="kw">pub</span> <span class="kw">fn</span> <span class="fn">new</span>(w: <span class="tp">f64</span>, h: <span class="tp">f64</span>) -&gt; <span class="tp">Rect</span> { <span class="tp">Rect</span> { width: w, height: h } }</span></div><div class="code-row"><span class="ln">8</span><span class="line">        <span class="kw">pub</span> <span class="kw">fn</span> <span class="fn">area</span>(&amp;<span class="kw">self</span>) -&gt; <span class="tp">f64</span> { <span class="kw">self</span>.width * <span class="kw">self</span>.height }</span></div><div class="code-row"><span class="ln">9</span><span class="line">    }</span></div><div class="code-row"><span class="ln">10</span><span class="line">    <span class="kw">pub</span> <span class="kw">enum</span> <span class="tp">Shape</span> { <span class="tp">Circle</span>(<span class="tp">f64</span>), <span class="tp">Square</span>(<span class="tp">f64</span>) }  <span class="cm">// variant 자동 공개</span></span></div><div class="code-row"><span class="ln">11</span><span class="line">}</span></div><div class="code-row"><span class="ln">12</span><span class="line"><span class="kw">use</span> <span class="kw">self</span>::shapes::{<span class="tp">Rect</span>, <span class="tp">Shape</span>};</span></div><div class="code-row"><span class="ln">13</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">14</span><span class="line">    <span class="kw">let</span> r = <span class="tp">Rect</span>::<span class="fn">new</span>(3.0, 4.0);</span></div><div class="code-row"><span class="ln">15</span><span class="line">    <span class="fn">println!</span>(<span class="st">"width={}, area={}"</span>, r.width, r.<span class="fn">area</span>());  <span class="cm">// width는 pub → OK</span></span></div><div class="code-row"><span class="ln">16</span><span class="line">    <span class="cm">// println!("{}", r.height);  // ❌ E0616: private 필드</span></span></div><div class="code-row"><span class="ln">17</span><span class="line">    <span class="kw">let</span> s = <span class="tp">Shape</span>::<span class="tp">Circle</span>(1.0);   <span class="cm">// variant public → 직접 생성 OK</span></span></div><div class="code-row"><span class="ln">18</span><span class="line">    <span class="kw">match</span> s { <span class="tp">Shape</span>::<span class="tp">Circle</span>(_) =&gt; <span class="fn">println!</span>(<span class="st">"원"</span>), <span class="tp">Shape</span>::<span class="tp">Square</span>(_) =&gt; <span class="fn">println!</span>(<span class="st">"사각"</span>) }</span></div><div class="code-row"><span class="ln">19</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_mod_vis"></div>
+</div>
+
+  <div class="note ok">
+    <div class="note-title">✅ 한 줄 요약</div>
+    <div class="note-body">
+      <ul>
+        <li>Rust는 <strong>전부 private가 기본</strong>. <code>pub</code>로 열고, <code>mod</code>로 묶는다(= Java 패키지 + 접근제어).</li>
+        <li>경로: <code>crate::</code>(절대·루트), <code>super::</code>(부모, <code>..</code>), <code>self::</code>(현재). <code>use</code>로 단축.</li>
+        <li>함정: <code>pub struct</code>여도 <strong>필드는 각각 <code>pub</code></strong> 필요. 반면 <code>pub enum</code>의 <strong>variant는 자동 공개</strong>.</li>
+        <li>세분: <code>pub(crate)</code>(크레이트 내), <code>pub(super)</code>(부모까지). 파일 분리는 <code>mod name;</code> + <code>name.rs</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+
+
+  <!-- ===== s8 Part 10 (보강 추가: 테스트 작성) ===== -->
+  <div class="part-h" id="s8-part10">Part 10. 테스트 작성 — <code>#[test]</code> · <code>assert_eq!</code> · <code>cargo test</code> <small style="color:#e06c75">← 보강 추가</small></div>
+  <div class="part-desc"><p>Rust는 테스트가 언어·툴체인에 내장돼 있습니다. 함수에 <code>#[test]</code>를 붙이고 <code>cargo test</code>로 실행하면 됩니다. 관용적으로 같은 파일 안에 <code>#[cfg(test)] mod tests</code>를 두어(테스트 빌드에서만 컴파일) 내부까지 검증합니다.</p></div>
+  <div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/book/ch11-01-writing-tests.html" target="_blank" rel="noopener noreferrer">TRPL §11 Writing Automated Tests<span class="external-icon">↗</span></a></div>
+
+  <style>
+  .tsbg{fill:#ffffff}.tst{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+  .tsl{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+  .tss{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+  .tsv{font:bold 12px 'Consolas',monospace;fill:#111827}
+  .tsok{font:bold 12px 'Consolas',monospace;fill:#059669}.tser{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+  .tsbox{fill:none;stroke:#374151;stroke-width:1.4}.tsar{stroke:#2563eb;stroke-width:1.6;fill:none}
+  [data-theme=dark] .tsbg{fill:#1e1e1e}[data-theme=dark] .tst{fill:#d4d4d4}[data-theme=dark] .tsl{fill:#d4d4d4}
+  [data-theme=dark] .tss{fill:#cccccc}[data-theme=dark] .tsv{fill:#9cdcfe}
+  [data-theme=dark] .tsok{fill:#4ec9b0}[data-theme=dark] .tser{fill:#f48771}
+  [data-theme=dark] .tsbox{stroke:#cccccc}[data-theme=dark] .tsar{stroke:#569cd6}
+  </style>
+
+  <h4>1) 구조 — 함수에 <code>#[test]</code>, 검증은 <code>assert</code> 매크로</h4>
+  <p><code>#[test]</code>가 붙은 함수는 <code>cargo test</code>가 각각 실행합니다. <strong>패닉하지 않으면 통과, 패닉하면 실패</strong>입니다. 검증에는 <code>assert!(조건)</code>, <code>assert_eq!(a, b)</code>, <code>assert_ne!(a, b)</code>를 씁니다(실패 시 좌/우 값을 출력). 패닉을 기대하는 테스트에는 <code>#[should_panic]</code>을 붙입니다.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="180" class="tsbg"/>
+<text x="16" y="24" class="tst">cargo test — 각 #[test]를 실행, 패닉 여부로 판정</text>
+<rect x="16" y="42" width="250" height="60" rx="6" class="tsbox"/>
+<text x="30" y="66" class="tsv">#[cfg(test)]</text>
+<text x="30" y="86" class="tsv">mod tests { #[test] fn.. }</text>
+<path d="M 266 72 L 360 72" class="tsar" marker-end="url(#tsA)"/>
+<text x="313" y="62" class="tss" text-anchor="middle">cargo test</text>
+<text x="372" y="60" class="tsok">패닉 없음 → 통과 (ok)</text>
+<text x="372" y="84" class="tser">패닉 발생 → 실패 (FAILED)</text>
+<text x="16" y="132" class="tss">assert_eq!(a,b): 실패 시 left/right 값 출력. #[should_panic]: 패닉해야 통과(반대).</text>
+<text x="16" y="156" class="tss">#[cfg(test)]가 붙은 mod는 일반 빌드에서 제외 — 실제 배포 바이너리엔 안 들어감.</text>
+<text x="16" y="174" class="tss">테스트 mod는 use super::*; 로 부모의 private 항목까지 검증 가능.</text>
+<defs><marker id="tsA" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/></marker></defs>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 8-10-가: 관용적 테스트 (▷실행은 main, 테스트는 cargo test)</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_test_mod')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_test_mod','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s8_test_mod">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> <span class="fn">add</span>(a: <span class="tp">i32</span>, b: <span class="tp">i32</span>) -&gt; <span class="tp">i32</span> { a + b }</span></div><div class="code-row"><span class="ln">2</span><span class="line"></span></div><div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">4</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{}"</span>, <span class="fn">add</span>(2, 3));   <span class="cm">// 5  (▷실행은 main을 돌림)</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">}</span></div><div class="code-row"><span class="ln">6</span><span class="line"></span></div><div class="code-row"><span class="ln">7</span><span class="line">#[<span class="fn">cfg</span>(test)]                 <span class="cm">// 테스트 빌드에서만 컴파일</span></span></div><div class="code-row"><span class="ln">8</span><span class="line"><span class="kw">mod</span> tests {</span></div><div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">use</span> <span class="kw">super</span>::*;             <span class="cm">// 부모 모듈의 add 가져오기</span></span></div><div class="code-row"><span class="ln">10</span><span class="line">    #[<span class="fn">test</span>]</span></div><div class="code-row"><span class="ln">11</span><span class="line">    <span class="kw">fn</span> <span class="fn">add_works</span>() {</span></div><div class="code-row"><span class="ln">12</span><span class="line">        <span class="fn">assert_eq!</span>(<span class="fn">add</span>(2, 3), 5);      <span class="cm">// cargo test로 실행</span></span></div><div class="code-row"><span class="ln">13</span><span class="line">    }</span></div><div class="code-row"><span class="ln">14</span><span class="line">    #[<span class="fn">test</span>]</span></div><div class="code-row"><span class="ln">15</span><span class="line">    #[<span class="fn">should_panic</span>]              <span class="cm">// 패닉해야 통과</span></span></div><div class="code-row"><span class="ln">16</span><span class="line">    <span class="kw">fn</span> <span class="fn">panics_ok</span>() { <span class="fn">panic!</span>(<span class="st">"의도된 패닉"</span>); }</span></div><div class="code-row"><span class="ln">17</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_test_mod"></div>
+</div>
+  <div class="note info">
+    <div class="note-title">💡 여기 ▷실행 vs 실제 테스트</div>
+    <div class="note-body">
+      이 플레이그라운드의 ▷실행은 <code>main()</code>을 돌려 <code>5</code>를 출력합니다. <code>#[cfg(test)]</code> 덕분에 <code>tests</code> 모듈은 일반 빌드에서 제외돼 컴파일만 되고 실행되진 않습니다. 실제 프로젝트에서는 <code>cargo test</code>로 <code>add_works … ok</code>, <code>panics_ok … ok</code>가 나옵니다.
+    </div>
+  </div>
+
+  <div class="ex-label concept">예제 8-10-나 (▷실행으로 확인): assert 매크로 동작</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s8_test_assert')">복사</button>
+<button class="run-btn" onclick="runCode('r_s8_test_assert','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s8_test_assert">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> result = 2 + 3;</span></div><div class="code-row"><span class="ln">3</span><span class="line">    <span class="fn">assert_eq!</span>(result, 5);     <span class="cm">// 통과 → 조용히 넘어감</span></span></div><div class="code-row"><span class="ln">4</span><span class="line">    <span class="fn">assert!</span>(result &gt; 0);        <span class="cm">// 통과</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">assert_ne!</span>(result, 6);     <span class="cm">// 통과</span></span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="fn">println!</span>(<span class="st">"모든 assert 통과!"</span>);</span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="cm">// assert_eq!(result, 99);  // 실패 시 panic: left=5, right=99</span></span></div><div class="code-row"><span class="ln">8</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s8_test_assert"></div>
+</div>
+
+  <div class="note ok">
+    <div class="note-title">✅ 한 줄 요약</div>
+    <div class="note-body">
+      <ul>
+        <li><code>#[test]</code> 함수는 <code>cargo test</code>가 실행. <strong>패닉 없으면 통과, 패닉하면 실패.</strong></li>
+        <li>검증: <code>assert!</code> / <code>assert_eq!</code> / <code>assert_ne!</code> (실패 시 좌·우 값 출력). 패닉 기대는 <code>#[should_panic]</code>.</li>
+        <li>관용: <code>#[cfg(test)] mod tests { use super::*; … }</code> — 테스트 빌드에서만 컴파일, 부모의 private까지 검증.</li>
+      </ul>
+    </div>
+  </div>
+
+
 </section>
 <section id="s9">
   <div class="sec-header"><h2>9. enum과 패턴 매칭 ⭐</h2>
@@ -11175,6 +11728,261 @@ This is key to understanding why it returns ().</code></pre>
 </div>
 <div class="run-output" id="out_r_s14_9"></div>
 </div></div>
+
+
+  <!-- ===== s14 Part 9 (추가 삽입: FromStr · parse · 터보피시) ===== -->
+  <div class="part-h" id="s14-part9">Part 9. <code>FromStr</code> · <code>parse</code> · 터보피시 <small style="color:#e06c75">← 대화 정리 추가</small></div>
+  <div class="part-desc"><p>문자열 → 값 변환의 핵심. <code>"3.14".parse::&lt;f64&gt;()</code>가 실제로 부르는 <code>FromStr</code> 트레잇, <code>F</code>를 정하는 터보피시 <code>::&lt;&gt;</code>, 그리고 <code>use</code>가 필요한 이유(E0599)까지. 모두 공식 std/Reference 기반.</p></div>
+  <div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/std/str/trait.FromStr.html" target="_blank" rel="noopener noreferrer">std::str::FromStr<span class="external-icon">↗</span></a></div>
+
+  <style>
+  .f14bg{fill:#ffffff}.f14t{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+  .f14l{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+  .f14s{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+  .f14v{font:bold 13px 'Consolas',monospace;fill:#111827}.f14v2{font:bold 12px 'Consolas',monospace;fill:#111827}
+  .f14ok{font:bold 12px 'Consolas',monospace;fill:#059669}.f14er{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+  .f14ar{stroke:#2563eb;stroke-width:2;fill:none}.f14box{fill:none;stroke:#374151;stroke-width:1.5}
+  [data-theme=dark] .f14bg{fill:#1e1e1e}[data-theme=dark] .f14t{fill:#d4d4d4}[data-theme=dark] .f14l{fill:#d4d4d4}
+  [data-theme=dark] .f14s{fill:#cccccc}[data-theme=dark] .f14v{fill:#9cdcfe}[data-theme=dark] .f14v2{fill:#9cdcfe}
+  [data-theme=dark] .f14ok{fill:#4ec9b0}[data-theme=dark] .f14er{fill:#f48771}
+  [data-theme=dark] .f14ar{stroke:#569cd6}[data-theme=dark] .f14box{stroke:#cccccc}
+  </style>
+
+  <h4>1) <code>parse</code>는 <code>FromStr</code>을 부르는 얇은 래퍼</h4>
+  <p><code>"3.14".parse::&lt;f64&gt;()</code>에서 실제 변환 로직은 <code>str</code>이 아니라 <strong>결과가 될 타입</strong>(f64)에 있습니다. <code>parse</code>는 그 타입의 <code>FromStr::from_str</code>을 호출하는 얇은 래퍼일 뿐입니다. 방향을 그림으로 보면:</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 176" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="176" class="f14bg"/>
+<text x="16" y="24" class="f14t">방향: &amp;str에서 결과 타입 F로 — FromStr은 F가 구현한다</text>
+<rect x="24" y="52" width="150" height="52" rx="6" class="f14box"/>
+<text x="99" y="76" class="f14v" text-anchor="middle">&amp;str</text>
+<text x="99" y="94" class="f14s" text-anchor="middle">문자열 입력</text>
+<line x1="180" y1="78" x2="404" y2="78" class="f14ar" marker-end="url(#f14arrow)"/>
+<text x="292" y="66" class="f14ok" text-anchor="middle">parse / from_str</text>
+<rect x="410" y="52" width="206" height="52" rx="6" class="f14box"/>
+<text x="513" y="76" class="f14v" text-anchor="middle">F = f64 / i32 / Point</text>
+<text x="513" y="94" class="f14s" text-anchor="middle">결과 타입</text>
+<text x="513" y="132" class="f14er" text-anchor="middle">↑ 이쪽이 FromStr을 구현</text>
+<text x="16" y="162" class="f14s">즉 문자열 자신이 아니라, 문자열로부터 '만들어지는' 타입이 impl FromStr 한다.</text>
+<defs><marker id="f14arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/></marker></defs>
+</svg>
+  </div>
+
+  <blockquote class="official-quote"><p><code>pub trait FromStr: Sized { type Err; fn from_str(s: &amp;str) -&gt; Result&lt;Self, Self::Err&gt;; }</code> — <em>from_str is often used implicitly, through str's parse method.</em> <code>from_str</code>은 본문 없이 끝나는 <strong>필수(required) 메서드</strong>라, 구현 타입이 반드시 채워야 합니다.</p><cite>— std::str::FromStr</cite></blockquote>
+
+  <div class="note info">
+    <div class="note-title">🧭 FromStr은 '문자열 타입'이 아니다</div>
+    <div class="note-body">
+      이름이 <em>From Str</em>('문자열로부터')이라 헷갈리지만, 이 자격을 갖는 건 <strong>결과가 될 타입</strong>입니다: <code>impl FromStr for f64</code>, <code>impl FromStr for i32</code>, <code>impl FromStr for Point</code>. <code>str</code>이 구현하는 게 아닙니다. 그래서 <code>parse::&lt;F&gt;()</code>의 <code>F</code> 자리에 f64·i32·Point가 들어갑니다.
+    </div>
+  </div>
+
+  <h4>2) <code>F</code>를 정하는 3가지 방법</h4>
+  <p><code>parse</code>의 원형은 <code>pub fn parse&lt;F: FromStr&gt;(&amp;self) -&gt; Result&lt;F, F::Err&gt;</code>입니다. <code>F</code>는 빈칸이고 채우는 주체는 <strong>호출자</strong>입니다. <code>F</code>만 정하면 <code>Err</code> 타입까지 통째로 확정됩니다(F=f64 → ParseFloatError, F=i32 → ParseIntError).</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 176" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="176" class="f14bg"/>
+<text x="16" y="24" class="f14t">F를 정하는 3가지 — 하나만 있으면 됨</text>
+<text x="24" y="58" class="f14l">방법A · 터보피시로 직접</text>
+<text x="300" y="58" class="f14v2">"3.14".parse::&lt;f64&gt;()</text>
+<text x="24" y="98" class="f14l">방법B · 변수 타입으로 역추론</text>
+<text x="300" y="98" class="f14v2">let x: f64 = "3.14".parse()</text>
+<text x="24" y="138" class="f14l">방법C · 사용 문맥으로 추론</text>
+<text x="300" y="138" class="f14v2">let x = "10".parse(); x + 5_i32</text>
+<text x="16" y="166" class="f14s">셋 다 단서가 없으면 error: type annotations needed 가 난다.</text>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 14-9-가: F를 정하는 3가지 방법</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s14_fromstr_parse')">복사</button>
+<button class="run-btn" onclick="runCode('r_s14_fromstr_parse','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s14_fromstr_parse">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">2</span><span class="line">    <span class="cm">// 방법A: 터보피시로 F 지정</span></span></div><div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> a = <span class="st">"3.14"</span>.<span class="fn">parse</span>::&lt;<span class="tp">f64</span>&gt;().<span class="fn">unwrap</span>();</span></div><div class="code-row"><span class="ln">4</span><span class="line">    <span class="cm">// 방법B: 변수 타입으로 역추론</span></span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">let</span> b: <span class="tp">i32</span> = <span class="st">"42"</span>.<span class="fn">parse</span>().<span class="fn">unwrap</span>();</span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="cm">// 방법C: 사용 문맥으로 추론 (c + 5_i32 → c는 i32)</span></span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> c = <span class="st">"10"</span>.<span class="fn">parse</span>().<span class="fn">unwrap</span>();</span></div><div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> d = c + 5_i32;</span></div><div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{a} {b} {d}"</span>);  <span class="cm">// 3.14 42 15</span></span></div><div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s14_fromstr_parse"></div>
+</div>
+
+  <h4>3) 터보피시 <code>::&lt;&gt;</code>는 왜 필요한가</h4>
+  <p>C++은 <code>parse&lt;f64&gt;()</code>처럼 <code>::</code> 없이 씁니다. Rust는 <strong>파싱 단계에서 이름이 함수인지 제네릭인지 모른다</strong>는 전제로 설계돼, 표현식에서 <code>&lt;</code>를 무조건 '작다' 비교로 먼저 해석합니다. 그래서 표현식에서 제네릭 인자를 줄 땐 <code>::&lt;&gt;</code>로 못박습니다. 단, <strong>타입(아이템) 자리</strong>에서는 Rust도 <code>::</code> 없이 씁니다.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 186" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="186" class="f14bg"/>
+<text x="16" y="24" class="f14t">표현식 자리 → :: 필요 / 타입 자리 → :: 불필요</text>
+<rect x="16" y="42" width="300" height="60" rx="6" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+<text x="30" y="66" class="f14er">✗ "3.14".parse&lt;f64&gt;()</text>
+<text x="30" y="90" class="f14s">표현식에서 &lt; 를 '작다'로 해석 → 에러</text>
+<rect x="328" y="42" width="296" height="60" rx="6" fill="none" stroke="#059669" stroke-width="1.5"/>
+<text x="342" y="66" class="f14ok">✓ "3.14".parse::&lt;f64&gt;()</text>
+<text x="342" y="90" class="f14s">:: 로 제네릭 인자임을 명시</text>
+<rect x="16" y="116" width="608" height="52" rx="6" class="f14box"/>
+<text x="30" y="140" class="f14v2">let v: Vec&lt;i32&gt; = Vec::new();</text>
+<text x="30" y="160" class="f14s">타입 자리(Vec&lt;i32&gt;)에서는 :: 없이 &lt;&gt; 사용 — 여기선 모호하지 않기 때문</text>
+</svg>
+  </div>
+
+  <h4>4) <code>use</code>가 필요한 이유 — inherent vs trait (E0599)</h4>
+  <p><code>.parse()</code>는 <code>str</code>에 직접 박힌 <strong>inherent 메서드</strong>라 <code>use</code>가 필요 없습니다. 하지만 <code>from_str</code>은 <strong>트레잇 메서드</strong>라, 그 트레잇(<code>FromStr</code>)이 스코프에 있어야 부를 수 있습니다. 없으면 <code>E0599</code>가 나며 "구현은 됐지만 스코프에 없으니 <code>use</code>하라"고 안내합니다. 서로 다른 두 트레잇이 같은 이름 메서드를 가질 수 있어, 스코프로 가져오지 않으면 어느 구현인지 결정할 수 없기 때문입니다. (<code>Clone</code> 등 흔한 트레잇은 prelude에 자동 포함되지만 <code>FromStr</code>은 아닙니다.)</p>
+
+  <div class="ex-label concept">예제 14-9-나 (에러 실감): use 없이 from_str 직접 호출 → E0599</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s14_fromstr_use')">복사</button>
+<button class="run-btn" onclick="runCode('r_s14_fromstr_use','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s14_fromstr_use">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="cm">// use std::str::FromStr;  ← 이 줄이 있어야 from_str을 찾음</span></span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">3</span><span class="line">    <span class="cm">// .parse()는 inherent라 use 불필요 → 이건 됨</span></span></div><div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> ok: <span class="tp">i32</span> = <span class="st">"42"</span>.<span class="fn">parse</span>().<span class="fn">unwrap</span>();</span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{ok}"</span>);</span></div><div class="code-row"><span class="ln">6</span><span class="line">    <span class="cm">// from_str은 트레잇 메서드 → use 없으면 E0599</span></span></div><div class="code-row"><span class="ln">7</span><span class="line">    <span class="kw">let</span> x = <span class="tp">i32</span>::<span class="fn">from_str</span>(<span class="st">"42"</span>);</span></div><div class="code-row"><span class="ln">8</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{x:?}"</span>);</span></div><div class="code-row"><span class="ln">9</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s14_fromstr_use"></div>
+</div>
+  <div class="note er">
+    <div class="note-title">❌ E0599 — 1행 주석을 풀면 정상 컴파일</div>
+    <div class="note-body">
+      <code>i32::from_str(...)</code>는 <code>FromStr</code>이 스코프에 없어 못 찾습니다. 컴파일러가 <code>use std::str::FromStr;</code>를 추가하라고 안내합니다. 4행 <code>.parse()</code>가 문제없는 것과 대비하면 "inherent는 그냥, trait은 use 신청" 규칙이 분명해집니다.
+    </div>
+  </div>
+
+  <h4>5) 완성 예제 — <code>impl FromStr for Point</code></h4>
+  <p>내 struct에 <code>FromStr</code>을 구현하면 <code>"3.0,4.0".parse::&lt;Point&gt;()</code>가 됩니다. 내부에서 <code>f64</code>의 <code>FromStr</code>을 <code>?</code>로 재사용하는 점, 그리고 <code>p.distance()</code>와 <code>Point::distance(&amp;p)</code>가 같은 결과인 점(메서드 문법 = 완전 정규화)을 함께 보여줍니다.</p>
+
+  <div class="ex-label concept">예제 14-9-다: Point에 FromStr 구현 (rustc 검증)</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s14_fromstr_point')">복사</button>
+<button class="run-btn" onclick="runCode('r_s14_fromstr_point','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s14_fromstr_point">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">use</span> std::str::<span class="tp">FromStr</span>;</span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">use</span> std::num::<span class="tp">ParseFloatError</span>;</span></div><div class="code-row"><span class="ln">3</span><span class="line"></span></div><div class="code-row"><span class="ln">4</span><span class="line">#[<span class="fn">derive</span>(<span class="tp">Debug</span>, <span class="tp">PartialEq</span>)]</span></div><div class="code-row"><span class="ln">5</span><span class="line"><span class="kw">struct</span> <span class="tp">Point</span> { x: <span class="tp">f64</span>, y: <span class="tp">f64</span> }</span></div><div class="code-row"><span class="ln">6</span><span class="line"></span></div><div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">impl</span> <span class="tp">FromStr</span> <span class="kw">for</span> <span class="tp">Point</span> {</span></div><div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">type</span> <span class="tp">Err</span> = <span class="tp">ParseFloatError</span>;</span></div><div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">fn</span> <span class="fn">from_str</span>(s: &amp;<span class="tp">str</span>) -&gt; <span class="tp">Result</span>&lt;<span class="tp">Self</span>, <span class="tp">Self</span>::<span class="tp">Err</span>&gt; {</span></div><div class="code-row"><span class="ln">10</span><span class="line">        <span class="kw">let</span> cleaned = s.<span class="fn">trim</span>().<span class="fn">trim_start_matches</span>(<span class="st">'('</span>).<span class="fn">trim_end_matches</span>(<span class="st">')'</span>);</span></div><div class="code-row"><span class="ln">11</span><span class="line">        <span class="kw">let</span> <span class="kw">mut</span> parts = cleaned.<span class="fn">split</span>(<span class="st">','</span>);</span></div><div class="code-row"><span class="ln">12</span><span class="line">        <span class="kw">let</span> x_str = parts.<span class="fn">next</span>().<span class="fn">unwrap_or</span>(<span class="st">""</span>).<span class="fn">trim</span>();</span></div><div class="code-row"><span class="ln">13</span><span class="line">        <span class="kw">let</span> y_str = parts.<span class="fn">next</span>().<span class="fn">unwrap_or</span>(<span class="st">""</span>).<span class="fn">trim</span>();</span></div><div class="code-row"><span class="ln">14</span><span class="line">        <span class="kw">let</span> x = x_str.<span class="fn">parse</span>::&lt;<span class="tp">f64</span>&gt;()?;  <span class="cm">// f64의 FromStr 재사용</span></span></div><div class="code-row"><span class="ln">15</span><span class="line">        <span class="kw">let</span> y = y_str.<span class="fn">parse</span>::&lt;<span class="tp">f64</span>&gt;()?;</span></div><div class="code-row"><span class="ln">16</span><span class="line">        <span class="tp">Ok</span>(<span class="tp">Point</span> { x, y })</span></div><div class="code-row"><span class="ln">17</span><span class="line">    }</span></div><div class="code-row"><span class="ln">18</span><span class="line">}</span></div><div class="code-row"><span class="ln">19</span><span class="line"><span class="kw">impl</span> <span class="tp">Point</span> {</span></div><div class="code-row"><span class="ln">20</span><span class="line">    <span class="kw">fn</span> <span class="fn">distance</span>(&amp;<span class="kw">self</span>) -&gt; <span class="tp">f64</span> {</span></div><div class="code-row"><span class="ln">21</span><span class="line">        (<span class="kw">self</span>.x * <span class="kw">self</span>.x + <span class="kw">self</span>.y * <span class="kw">self</span>.y).<span class="fn">sqrt</span>()</span></div><div class="code-row"><span class="ln">22</span><span class="line">    }</span></div><div class="code-row"><span class="ln">23</span><span class="line">}</span></div><div class="code-row"><span class="ln">24</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">25</span><span class="line">    <span class="kw">let</span> p1 = <span class="st">"3.0,4.0"</span>.<span class="fn">parse</span>::&lt;<span class="tp">Point</span>&gt;().<span class="fn">unwrap</span>();  <span class="cm">// 터보피시</span></span></div><div class="code-row"><span class="ln">26</span><span class="line">    <span class="fn">println!</span>(<span class="st">"p1 = {p1:?}"</span>);</span></div><div class="code-row"><span class="ln">27</span><span class="line">    <span class="fn">println!</span>(<span class="st">"p1.distance() = {}"</span>, p1.<span class="fn">distance</span>());</span></div><div class="code-row"><span class="ln">28</span><span class="line">    <span class="fn">println!</span>(<span class="st">"Point::distance(&amp;p1) = {}"</span>, <span class="tp">Point</span>::<span class="fn">distance</span>(&amp;p1));  <span class="cm">// 등가</span></span></div><div class="code-row"><span class="ln">29</span><span class="line">    <span class="kw">let</span> p2: <span class="tp">Point</span> = <span class="st">"(6.0, 8.0)"</span>.<span class="fn">parse</span>().<span class="fn">unwrap</span>();  <span class="cm">// 변수 타입 역추론</span></span></div><div class="code-row"><span class="ln">30</span><span class="line">    <span class="fn">println!</span>(<span class="st">"p2.distance() = {}"</span>, p2.<span class="fn">distance</span>());</span></div><div class="code-row"><span class="ln">31</span><span class="line">    <span class="kw">let</span> bad = <span class="st">"abc,def"</span>.<span class="fn">parse</span>::&lt;<span class="tp">Point</span>&gt;();  <span class="cm">// 에러 케이스</span></span></div><div class="code-row"><span class="ln">32</span><span class="line">    <span class="fn">println!</span>(<span class="st">"bad = {bad:?}"</span>);</span></div><div class="code-row"><span class="ln">33</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s14_fromstr_point"></div>
+</div>
+
+  <div class="note ok">
+    <div class="note-title">✅ 한 줄 요약</div>
+    <div class="note-body">
+      <ul>
+        <li><code>parse</code>는 <code>FromStr::from_str</code>을 부르는 얇은 래퍼. <strong>결과가 될 타입</strong>(f64/i32/Point)이 <code>FromStr</code>을 구현한다.</li>
+        <li><code>F</code>는 호출자가 정한다 — 터보피시 <code>::&lt;F&gt;</code> / 변수 타입 / 사용 문맥 중 하나.</li>
+        <li>표현식에서 제네릭 인자는 <code>::&lt;&gt;</code>가 필요(타입 자리에선 불필요).</li>
+        <li><code>.parse()</code>는 inherent라 그냥, <code>from_str</code>은 트레잇 메서드라 <code>use</code> 필요(없으면 E0599).</li>
+      </ul>
+    </div>
+  </div>
+
+
+
+  <!-- ===== s14 Part 10 (추가 삽입: 트레잇 이름 충돌 E0034 · 완전 정규화) ===== -->
+  <div class="part-h" id="s14-part10">Part 10. 트레잇 이름 충돌과 완전 정규화 <code>&lt;T as Trait&gt;::m()</code> <small style="color:#e06c75">← 대화 정리 추가</small></div>
+  <div class="part-desc"><p>서로 다른 두 트레잇이 <strong>같은 이름 메서드</strong>를 가질 때 <code>person.fly()</code>는 <code>E0034</code>로 멈춥니다. <code>use</code>는 후보를 스코프에 올리는 단계, 완전 정규화 <code>&lt;T as Trait&gt;::m()</code>은 올라온 후보가 여럿일 때 최종 지목입니다.</p></div>
+  <div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/book/ch20-02-advanced-traits.html" target="_blank" rel="noopener noreferrer">TRPL: Advanced Traits (Disambiguation)<span class="external-icon">↗</span></a></div>
+
+  <style>
+  .e34bg{fill:#ffffff}.e34t{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+  .e34l{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+  .e34s{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+  .e34v{font:bold 12px 'Consolas',monospace;fill:#111827}
+  .e34ok{font:bold 12px 'Consolas',monospace;fill:#059669}.e34er{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+  .e34ar{stroke:#2563eb;stroke-width:2;fill:none}
+  [data-theme=dark] .e34bg{fill:#1e1e1e}[data-theme=dark] .e34t{fill:#d4d4d4}[data-theme=dark] .e34l{fill:#d4d4d4}
+  [data-theme=dark] .e34s{fill:#cccccc}[data-theme=dark] .e34v{fill:#9cdcfe}
+  [data-theme=dark] .e34ok{fill:#4ec9b0}[data-theme=dark] .e34er{fill:#f48771}[data-theme=dark] .e34ar{stroke:#569cd6}
+  </style>
+
+  <h4>1) 같은 이름 메서드가 여럿 — <code>person.fly()</code>는 어느 것?</h4>
+  <p><code>Pilot</code>과 <code>Wizard</code>가 모두 <code>fly(&amp;self)</code>를 가지면, <code>person.fly()</code>만으로는 어느 구현인지 정할 수 없어 <strong><code>error[E0034]: multiple applicable items in scope</code></strong>가 납니다. 컴파일러는 임의로 고르지 않고 멈춥니다. 단, 타입에 <strong>inherent 메서드</strong>(그 타입에 직접 박은 <code>impl Human { fn fly }</code>)가 있으면 <code>person.fly()</code>는 그 inherent를 <strong>먼저</strong> 찾습니다.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 234" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="234" class="e34bg"/>
+<text x="16" y="24" class="e34t">person.fly() 후보 3개 — 지목 방법</text>
+<rect x="16" y="40" width="608" height="40" rx="6" fill="none" stroke="#059669" stroke-width="1.5"/>
+<text x="30" y="65" class="e34v">impl Human { fn fly }</text>
+<text x="410" y="65" class="e34ok">← inherent · person.fly()가 먼저 선택</text>
+<rect x="16" y="88" width="296" height="40" rx="6" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+<text x="30" y="113" class="e34v">impl Pilot for Human</text>
+<rect x="328" y="88" width="296" height="40" rx="6" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+<text x="342" y="113" class="e34v">impl Wizard for Human</text>
+<text x="16" y="156" class="e34l">트레잇 쪽을 지목하려면:</text>
+<text x="30" y="180" class="e34v">Pilot::fly(&amp;person)</text>
+<text x="330" y="180" class="e34v">Wizard::fly(&amp;person)</text>
+<text x="30" y="206" class="e34v">&lt;Human as Pilot&gt;::fly(&amp;person)</text>
+<text x="330" y="206" class="e34s">← 타입까지 명시(가장 확실)</text>
+<text x="16" y="226" class="e34s">inherent가 없으면 후보는 Pilot·Wizard 둘뿐 → person.fly()는 E0034.</text>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 14-10-가 (에러 실감): inherent 없이 이름 충돌 → E0034</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s14_e0034_bad')">복사</button>
+<button class="run-btn" onclick="runCode('r_s14_e0034_bad','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s14_e0034_bad">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">trait</span> <span class="tp">Pilot</span> { <span class="kw">fn</span> <span class="fn">fly</span>(&amp;<span class="kw">self</span>); }</span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">trait</span> <span class="tp">Wizard</span> { <span class="kw">fn</span> <span class="fn">fly</span>(&amp;<span class="kw">self</span>); }</span></div><div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">struct</span> <span class="tp">Human</span>;</span></div><div class="code-row"><span class="ln">4</span><span class="line"><span class="kw">impl</span> <span class="tp">Pilot</span> <span class="kw">for</span> <span class="tp">Human</span> { <span class="kw">fn</span> <span class="fn">fly</span>(&amp;<span class="kw">self</span>) { <span class="fn">println!</span>(<span class="st">"기장입니다."</span>); } }</span></div><div class="code-row"><span class="ln">5</span><span class="line"><span class="kw">impl</span> <span class="tp">Wizard</span> <span class="kw">for</span> <span class="tp">Human</span> { <span class="kw">fn</span> <span class="fn">fly</span>(&amp;<span class="kw">self</span>) { <span class="fn">println!</span>(<span class="st">"마법사입니다."</span>); } }</span></div><div class="code-row"><span class="ln">6</span><span class="line"><span class="cm">// inherent fly 없음 → person.fly()가 어느 trait인지 모름</span></span></div><div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> person = <span class="tp">Human</span>;</span></div><div class="code-row"><span class="ln">9</span><span class="line">    person.<span class="fn">fly</span>();  <span class="cm">// error[E0034]: multiple applicable items in scope</span></span></div><div class="code-row"><span class="ln">10</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s14_e0034_bad"></div>
+</div>
+
+  <h4>2) <code>use</code> = 후보 올리기 / 완전 정규화 = 최종 지목</h4>
+  <p>둘은 다른 단계입니다. <code>use</code>는 <strong>어느 트레잇을 후보로 올릴지</strong> 정하고, 완전 정규화 문법은 <strong>올라온 후보가 여럿일 때 최종 지목</strong>합니다. 그래서 <code>Wizard</code>만 <code>use</code>하고 <code>Pilot</code>은 안 하면 후보가 하나뿐이라 <code>person.fly()</code>가 그냥 됩니다.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 150" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="150" class="e34bg"/>
+<text x="16" y="24" class="e34t">두 단계 — 헷갈리지 말 것</text>
+<rect x="16" y="40" width="296" height="82" rx="6" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+<text x="30" y="64" class="e34l">① use — 후보 올리기</text>
+<text x="30" y="88" class="e34s">어느 트레잇을 스코프에</text>
+<text x="30" y="106" class="e34s">후보로 넣을지 결정</text>
+<rect x="328" y="40" width="296" height="82" rx="6" fill="none" stroke="#059669" stroke-width="1.5"/>
+<text x="342" y="64" class="e34l">② 완전 정규화 — 최종 지목</text>
+<text x="342" y="88" class="e34s">올라온 후보가 여럿일 때</text>
+<text x="342" y="106" class="e34v">&lt;T as Trait&gt;::m(&amp;x)</text>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 14-10-나: inherent 우선 + 완전 정규화 6가지 (rustc 검증)</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s14_e0034_full')">복사</button>
+<button class="run-btn" onclick="runCode('r_s14_e0034_full','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s14_e0034_full">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">trait</span> <span class="tp">Pilot</span> { <span class="kw">fn</span> <span class="fn">fly</span>(&amp;<span class="kw">self</span>); }</span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">trait</span> <span class="tp">Wizard</span> { <span class="kw">fn</span> <span class="fn">fly</span>(&amp;<span class="kw">self</span>); }</span></div><div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">struct</span> <span class="tp">Human</span>;</span></div><div class="code-row"><span class="ln">4</span><span class="line"><span class="kw">impl</span> <span class="tp">Pilot</span> <span class="kw">for</span> <span class="tp">Human</span> {</span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">fn</span> <span class="fn">fly</span>(&amp;<span class="kw">self</span>) { <span class="fn">println!</span>(<span class="st">"기장입니다. 이륙합니다."</span>); }</span></div><div class="code-row"><span class="ln">6</span><span class="line">}</span></div><div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">impl</span> <span class="tp">Wizard</span> <span class="kw">for</span> <span class="tp">Human</span> {</span></div><div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">fn</span> <span class="fn">fly</span>(&amp;<span class="kw">self</span>) { <span class="fn">println!</span>(<span class="st">"마법사입니다. 빗자루로 납니다."</span>); }</span></div><div class="code-row"><span class="ln">9</span><span class="line">}</span></div><div class="code-row"><span class="ln">10</span><span class="line"><span class="kw">impl</span> <span class="tp">Human</span> {</span></div><div class="code-row"><span class="ln">11</span><span class="line">    <span class="kw">fn</span> <span class="fn">fly</span>(&amp;<span class="kw">self</span>) { <span class="fn">println!</span>(<span class="st">"그냥 사람이라 못 납니다."</span>); }</span></div><div class="code-row"><span class="ln">12</span><span class="line">}</span></div><div class="code-row"><span class="ln">13</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">14</span><span class="line">    <span class="kw">let</span> person = <span class="tp">Human</span>;</span></div><div class="code-row"><span class="ln">15</span><span class="line">    person.<span class="fn">fly</span>();                    <span class="cm">// inherent 우선</span></span></div><div class="code-row"><span class="ln">16</span><span class="line">    <span class="tp">Pilot</span>::<span class="fn">fly</span>(&amp;person);             <span class="cm">// Pilot</span></span></div><div class="code-row"><span class="ln">17</span><span class="line">    <span class="tp">Wizard</span>::<span class="fn">fly</span>(&amp;person);            <span class="cm">// Wizard</span></span></div><div class="code-row"><span class="ln">18</span><span class="line">    &lt;<span class="tp">Human</span> <span class="kw">as</span> <span class="tp">Pilot</span>&gt;::<span class="fn">fly</span>(&amp;person);  <span class="cm">// 타입까지 명시</span></span></div><div class="code-row"><span class="ln">19</span><span class="line">    &lt;<span class="tp">Human</span> <span class="kw">as</span> <span class="tp">Wizard</span>&gt;::<span class="fn">fly</span>(&amp;person);</span></div><div class="code-row"><span class="ln">20</span><span class="line">    <span class="tp">Human</span>::<span class="fn">fly</span>(&amp;person);             <span class="cm">// inherent</span></span></div><div class="code-row"><span class="ln">21</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s14_e0034_full"></div>
+</div>
+  <div class="note info">
+    <div class="note-title">🖨️ 예상 출력</div>
+    <div class="note-body">
+      그냥 사람이라 못 납니다. / 기장입니다. 이륙합니다. / 마법사입니다. 빗자루로 납니다. / 기장입니다. 이륙합니다. / 마법사입니다. 빗자루로 납니다. / 그냥 사람이라 못 납니다.
+      <br><br>
+      <code>person.fly()</code>가 에러 없이 inherent를 출력하는 건 공식 문서(method-call-expr)대로 <strong>inherent 메서드를 trait 메서드보다 먼저</strong> 찾기 때문입니다. 11행의 inherent <code>fly</code>를 지우면 후보가 Pilot/Wizard 둘뿐이라 그때 <code>E0034</code>가 납니다.
+    </div>
+  </div>
+
+  <div class="note ok">
+    <div class="note-title">✅ 한 줄 요약</div>
+    <div class="note-body">
+      <ul>
+        <li>두 트레잇이 같은 이름 메서드 → <code>x.m()</code>는 <code>E0034</code>. 컴파일러는 임의 선택 없이 멈춘다.</li>
+        <li>지목: <code>Trait::m(&amp;x)</code>, 가장 확실하게는 <code>&lt;Type as Trait&gt;::m(&amp;x)</code>.</li>
+        <li><strong>inherent 메서드가 있으면 <code>x.m()</code>은 그것을 먼저</strong> 선택(트레잇보다 우선).</li>
+        <li><code>use</code>는 후보 올리기, 완전 정규화는 최종 지목 — 서로 다른 단계.</li>
+      </ul>
+    </div>
+  </div>
+
 
   <div class="srcs"><span class="srcs-label">출처:</span>
     <a class="src" href="https://doc.rust-kr.org/ch10-02-traits.html" target="_blank">10.2절 「트레잇으로 공통된 동작 정의하기」</a>
@@ -18881,6 +19689,142 @@ help: insert some indirection (e.g., a <span style="color:#4ec9b0;">Box</span>, 
     </ul>
   </div>
 </div>
+
+
+
+  <!-- ===== s18 Part 14 (추가 삽입: Weak / Rc 순환 참조) ===== -->
+  <div class="part-h" id="s18-part14">Part 14. <code>Weak&lt;T&gt;</code> / <code>Rc</code> 순환 참조 — 메모리 누수와 끊는 법 <small style="color:#e06c75">← 보강 추가</small></div>
+  <div class="part-desc"><p><code>Rc</code>는 편하지만 <strong>두 값이 서로를 <code>Rc</code>로 가리키면</strong> <code>strong_count</code>가 0에 도달하지 못해 <strong>해제되지 않습니다(메모리 누수)</strong>. Rust에서 누수는 <em>안전(safe)</em>하지만 여전히 버그입니다. 해법은 한 방향을 <strong>소유하지 않는 약참조 <code>Weak&lt;T&gt;</code></strong>로 바꾸는 것입니다.</p></div>
+  <div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/book/ch15-06-reference-cycles.html" target="_blank" rel="noopener noreferrer">TRPL §15.6 Reference Cycles Can Leak Memory<span class="external-icon">↗</span></a></div>
+  <div class="official-doc-link"><span class="icon">📚</span><span class="label">Rust 공식 문서:</span><a href="https://doc.rust-lang.org/std/rc/" target="_blank" rel="noopener noreferrer">std::rc (Rc / Weak)<span class="external-icon">↗</span></a></div>
+
+  <style>
+  .wkbg{fill:#ffffff}.wkt{font:bold 14px 'Pretendard','Noto Sans KR',sans-serif;fill:#111827}
+  .wkl{font:600 12px 'Pretendard','Noto Sans KR',sans-serif;fill:#374151}
+  .wks{font:11px 'Pretendard','Noto Sans KR',sans-serif;fill:#4b5563}
+  .wkv{font:bold 12px 'Consolas',monospace;fill:#111827}
+  .wkok{font:bold 12px 'Consolas',monospace;fill:#059669}.wker{font:bold 12px 'Consolas',monospace;fill:#dc2626}
+  .wkbox{fill:none;stroke:#2563eb;stroke-width:1.6}.wkboxg{fill:none;stroke:#059669;stroke-width:1.6}
+  .wkstrong{stroke:#2563eb;stroke-width:2.4;fill:none}.wkweak{stroke:#059669;stroke-width:2;fill:none;stroke-dasharray:6 4}
+  [data-theme=dark] .wkbg{fill:#1e1e1e}[data-theme=dark] .wkt{fill:#d4d4d4}[data-theme=dark] .wkl{fill:#d4d4d4}
+  [data-theme=dark] .wks{fill:#cccccc}[data-theme=dark] .wkv{fill:#9cdcfe}
+  [data-theme=dark] .wkok{fill:#4ec9b0}[data-theme=dark] .wker{fill:#f48771}
+  [data-theme=dark] .wkbox{stroke:#569cd6}[data-theme=dark] .wkboxg{stroke:#4ec9b0}
+  [data-theme=dark] .wkstrong{stroke:#569cd6}[data-theme=dark] .wkweak{stroke:#4ec9b0}
+  </style>
+
+  <h4>1) 문제 — 서로를 <code>Rc</code>로 가리키면 카운트가 0에 못 간다</h4>
+  <p><code>Rc::clone</code>은 <code>strong_count</code>를 +1 하고, <code>strong_count</code>가 <strong>0이 될 때만</strong> 값이 해제됩니다. 그런데 A가 B를, B가 A를 <code>Rc</code>로 붙잡으면, 지역 변수가 사라져도 서로가 서로를 잡고 있어 카운트가 1 아래로 내려가지 않습니다 → 영원히 해제 안 됨.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="200" class="wkbg"/>
+<text x="16" y="24" class="wkt">순환: A ⇄ B 를 서로 Rc로 소유 → strong이 0에 못 감</text>
+<rect x="70" y="60" width="180" height="60" rx="8" class="wkbox"/>
+<text x="160" y="86" class="wkv" text-anchor="middle">Node A (value 1)</text>
+<text x="160" y="106" class="wker" text-anchor="middle">strong_count = 1</text>
+<rect x="390" y="60" width="180" height="60" rx="8" class="wkbox"/>
+<text x="480" y="86" class="wkv" text-anchor="middle">Node B (value 2)</text>
+<text x="480" y="106" class="wker" text-anchor="middle">strong_count = 1</text>
+<path d="M 250 78 C 320 60, 320 60, 390 78" class="wkstrong" marker-end="url(#wkA)"/>
+<path d="M 390 104 C 320 122, 320 122, 250 104" class="wkstrong" marker-end="url(#wkA)"/>
+<text x="320" y="52" class="wks" text-anchor="middle">Rc (strong)</text>
+<text x="320" y="140" class="wks" text-anchor="middle">Rc (strong)</text>
+<text x="16" y="172" class="wker">지역 변수 drop돼도 서로가 붙잡아 strong=1 유지 → 힙 해제 불가 → 누수 (Drop도 안 불림)</text>
+<text x="16" y="192" class="wks">Rust에서 누수는 safe하지만 버그다. unsafe 없이도 만들 수 있는 몇 안 되는 안전한 사고.</text>
+<defs><marker id="wkA" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/></marker></defs>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 18-14-가 (누수 재현): 순환 → Drop이 안 불린다</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s18_weak_leak')">복사</button>
+<button class="run-btn" onclick="runCode('r_s18_weak_leak','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s18_weak_leak">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">use</span> std::rc::<span class="tp">Rc</span>;</span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">use</span> std::cell::<span class="tp">RefCell</span>;</span></div><div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">struct</span> <span class="tp">Node</span> { value: <span class="tp">i32</span>, next: <span class="tp">RefCell</span>&lt;<span class="tp">Option</span>&lt;<span class="tp">Rc</span>&lt;<span class="tp">Node</span>&gt;&gt;&gt; }</span></div><div class="code-row"><span class="ln">4</span><span class="line"><span class="kw">impl</span> <span class="tp">Drop</span> <span class="kw">for</span> <span class="tp">Node</span> {</span></div><div class="code-row"><span class="ln">5</span><span class="line">    <span class="kw">fn</span> <span class="fn">drop</span>(&amp;<span class="kw">mut self</span>) { <span class="fn">println!</span>(<span class="st">"Node {} drop!"</span>, <span class="kw">self</span>.value); }</span></div><div class="code-row"><span class="ln">6</span><span class="line">}</span></div><div class="code-row"><span class="ln">7</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">8</span><span class="line">    <span class="kw">let</span> a = <span class="tp">Rc</span>::<span class="fn">new</span>(<span class="tp">Node</span> { value: 1, next: <span class="tp">RefCell</span>::<span class="fn">new</span>(<span class="tp">None</span>) });</span></div><div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">let</span> b = <span class="tp">Rc</span>::<span class="fn">new</span>(<span class="tp">Node</span> { value: 2, next: <span class="tp">RefCell</span>::<span class="fn">new</span>(<span class="tp">None</span>) });</span></div><div class="code-row"><span class="ln">10</span><span class="line">    *a.next.<span class="fn">borrow_mut</span>() = <span class="tp">Some</span>(<span class="tp">Rc</span>::<span class="fn">clone</span>(&amp;b));  <span class="cm">// a → b</span></span></div><div class="code-row"><span class="ln">11</span><span class="line">    *b.next.<span class="fn">borrow_mut</span>() = <span class="tp">Some</span>(<span class="tp">Rc</span>::<span class="fn">clone</span>(&amp;a));  <span class="cm">// b → a (순환)</span></span></div><div class="code-row"><span class="ln">12</span><span class="line">    <span class="fn">println!</span>(<span class="st">"a strong = {}"</span>, <span class="tp">Rc</span>::<span class="fn">strong_count</span>(&amp;a));  <span class="cm">// 2</span></span></div><div class="code-row"><span class="ln">13</span><span class="line">    <span class="fn">println!</span>(<span class="st">"b strong = {}"</span>, <span class="tp">Rc</span>::<span class="fn">strong_count</span>(&amp;b));  <span class="cm">// 2</span></span></div><div class="code-row"><span class="ln">14</span><span class="line">    <span class="cm">// main 끝: a,b 변수 drop → strong 각 1로만 → 0 안 됨</span></span></div><div class="code-row"><span class="ln">15</span><span class="line">    <span class="cm">// → "Node .. drop!"이 출력되지 않는다 = 누수</span></span></div><div class="code-row"><span class="ln">16</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s18_weak_leak"></div>
+</div>
+
+  <h4>2) <code>Weak&lt;T&gt;</code> — 소유하지 않는 약참조</h4>
+  <p><code>Rc::downgrade(&amp;rc)</code>를 부르면 <code>Weak&lt;T&gt;</code>를 얻습니다. 이건 <code>strong_count</code> 대신 <strong><code>weak_count</code></strong>를 +1 합니다. 핵심 차이: <strong><code>weak_count</code>는 값 해제 조건에 영향을 주지 않습니다</strong>(<code>strong_count</code>만 0이면 해제). 그래서 순환에 약참조가 하나라도 끼면 순환이 끊깁니다.</p>
+
+  <blockquote class="official-quote"><p><em>calling Rc::downgrade increases the weak_count by 1 … the weak_count doesn't need to be 0 for the Rc&lt;T&gt; instance to be cleaned up.</em> 약참조는 <strong>소유를 표현하지 않으며</strong>, 그 카운트는 값이 언제 정리되는지에 영향을 주지 않습니다. 값에 접근하려면 <code>upgrade()</code>로 <code>Option&lt;Rc&lt;T&gt;&gt;</code>를 얻어 <strong>살아있는지 확인</strong>해야 합니다(살아있으면 <code>Some</code>, 해제됐으면 <code>None</code>).</p><cite>— TRPL §15.6 / std::rc</cite></blockquote>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 168" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="168" class="wkbg"/>
+<text x="16" y="24" class="wkt">Weak는 값을 붙잡지 않는다 — 쓰려면 upgrade()로 생사 확인</text>
+<rect x="24" y="46" width="150" height="46" rx="8" class="wkboxg"/>
+<text x="99" y="74" class="wkv" text-anchor="middle">Weak&lt;T&gt;</text>
+<path d="M 178 69 L 300 69" class="wkstrong" marker-end="url(#wkB)"/>
+<text x="240" y="60" class="wks" text-anchor="middle">.upgrade()</text>
+<text x="315" y="60" class="wkok">Some(Rc&lt;T&gt;)  — 값이 아직 살아있음</text>
+<text x="315" y="86" class="wker">None            — 이미 해제됨</text>
+<text x="16" y="126" class="wks">Rc::downgrade(&amp;rc) → weak_count +1 (strong 아님).</text>
+<text x="16" y="146" class="wks">strong_count == 0 이면 값 해제 — weak_count가 남아 있어도 해제된다.</text>
+<defs><marker id="wkB" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/></marker></defs>
+</svg>
+  </div>
+
+  <h4>3) 패턴 — 부모는 자식을 <code>Rc</code>(소유), 자식은 부모를 <code>Weak</code>(비소유)</h4>
+  <p>트리·그래프에서 표준 해법입니다. <strong>부모가 자식을 소유</strong>하므로 부모→자식은 강참조 <code>Rc</code>, <strong>자식은 부모를 소유하면 안 되므로</strong> 자식→부모는 약참조 <code>Weak</code>. 이러면 순환이 없어 <code>strong_count</code>가 정상적으로 0에 도달합니다.</p>
+
+  <div class="lifetime-svg-wrap">
+    <svg viewBox="0 0 640 196" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">
+<rect width="640" height="196" class="wkbg"/>
+<text x="16" y="24" class="wkt">부모→자식 Rc(소유) · 자식→부모 Weak(비소유) → 순환 없음</text>
+<rect x="240" y="44" width="160" height="46" rx="8" class="wkbox"/>
+<text x="320" y="72" class="wkv" text-anchor="middle">branch (부모)</text>
+<rect x="120" y="128" width="150" height="46" rx="8" class="wkbox"/>
+<text x="195" y="156" class="wkv" text-anchor="middle">leaf (자식)</text>
+<path d="M 300 90 L 220 128" class="wkstrong" marker-end="url(#wkC)"/>
+<text x="300" y="118" class="wkok">Rc (강·소유)</text>
+<path d="M 235 128 L 315 92" class="wkweak" marker-end="url(#wkC2)"/>
+<text x="360" y="120" class="wkok" style="fill:#059669">Weak (약·비소유)</text>
+<text x="16" y="192" class="wks">부모 drop → 자식도 drop(소유하니까). 자식 drop돼도 부모는 유지. 누수 없음.</text>
+<defs>
+<marker id="wkC" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/></marker>
+<marker id="wkC2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#059669"/></marker>
+</defs>
+</svg>
+  </div>
+
+  <div class="ex-label concept">예제 18-14-나 (해결): Weak로 순환을 끊는다 (TRPL §15.6)</div>
+  <div class="eb">
+<div class="et">
+<span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s18_weak_fix')">복사</button>
+<button class="run-btn" onclick="runCode('r_s18_weak_fix','rust')">&#9655; 실행</button>
+</div>
+<div class="vp" spellcheck="false" id="r_s18_weak_fix">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">use</span> std::rc::{<span class="tp">Rc</span>, <span class="tp">Weak</span>};</span></div><div class="code-row"><span class="ln">2</span><span class="line"><span class="kw">use</span> std::cell::<span class="tp">RefCell</span>;</span></div><div class="code-row"><span class="ln">3</span><span class="line"><span class="kw">struct</span> <span class="tp">Node</span> {</span></div><div class="code-row"><span class="ln">4</span><span class="line">    value: <span class="tp">i32</span>,</span></div><div class="code-row"><span class="ln">5</span><span class="line">    parent: <span class="tp">RefCell</span>&lt;<span class="tp">Weak</span>&lt;<span class="tp">Node</span>&gt;&gt;,        <span class="cm">// 자식→부모: 약참조</span></span></div><div class="code-row"><span class="ln">6</span><span class="line">    children: <span class="tp">RefCell</span>&lt;<span class="tp">Vec</span>&lt;<span class="tp">Rc</span>&lt;<span class="tp">Node</span>&gt;&gt;&gt;,  <span class="cm">// 부모→자식: 강참조(소유)</span></span></div><div class="code-row"><span class="ln">7</span><span class="line">}</span></div><div class="code-row"><span class="ln">8</span><span class="line"><span class="kw">impl</span> <span class="tp">Drop</span> <span class="kw">for</span> <span class="tp">Node</span> {</span></div><div class="code-row"><span class="ln">9</span><span class="line">    <span class="kw">fn</span> <span class="fn">drop</span>(&amp;<span class="kw">mut self</span>) { <span class="fn">println!</span>(<span class="st">"Node {} drop!"</span>, <span class="kw">self</span>.value); }</span></div><div class="code-row"><span class="ln">10</span><span class="line">}</span></div><div class="code-row"><span class="ln">11</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div><div class="code-row"><span class="ln">12</span><span class="line">    <span class="kw">let</span> leaf = <span class="tp">Rc</span>::<span class="fn">new</span>(<span class="tp">Node</span> {</span></div><div class="code-row"><span class="ln">13</span><span class="line">        value: 3, parent: <span class="tp">RefCell</span>::<span class="fn">new</span>(<span class="tp">Weak</span>::<span class="fn">new</span>()), children: <span class="tp">RefCell</span>::<span class="fn">new</span>(<span class="fn">vec!</span>[]),</span></div><div class="code-row"><span class="ln">14</span><span class="line">    });</span></div><div class="code-row"><span class="ln">15</span><span class="line">    <span class="fn">println!</span>(<span class="st">"leaf parent = {:?}"</span>, leaf.parent.<span class="fn">borrow</span>().<span class="fn">upgrade</span>().<span class="fn">map</span>(|p| p.value));  <span class="cm">// None</span></span></div><div class="code-row"><span class="ln">16</span><span class="line">    <span class="kw">let</span> branch = <span class="tp">Rc</span>::<span class="fn">new</span>(<span class="tp">Node</span> {</span></div><div class="code-row"><span class="ln">17</span><span class="line">        value: 5, parent: <span class="tp">RefCell</span>::<span class="fn">new</span>(<span class="tp">Weak</span>::<span class="fn">new</span>()), children: <span class="tp">RefCell</span>::<span class="fn">new</span>(<span class="fn">vec!</span>[<span class="tp">Rc</span>::<span class="fn">clone</span>(&amp;leaf)]),</span></div><div class="code-row"><span class="ln">18</span><span class="line">    });</span></div><div class="code-row"><span class="ln">19</span><span class="line">    *leaf.parent.<span class="fn">borrow_mut</span>() = <span class="tp">Rc</span>::<span class="fn">downgrade</span>(&amp;branch);  <span class="cm">// 부모를 약참조로</span></span></div><div class="code-row"><span class="ln">20</span><span class="line">    <span class="fn">println!</span>(<span class="st">"leaf parent = {:?}"</span>, leaf.parent.<span class="fn">borrow</span>().<span class="fn">upgrade</span>().<span class="fn">map</span>(|p| p.value));  <span class="cm">// Some(5)</span></span></div><div class="code-row"><span class="ln">21</span><span class="line">    <span class="fn">println!</span>(<span class="st">"branch strong={}, weak={}"</span>, <span class="tp">Rc</span>::<span class="fn">strong_count</span>(&amp;branch), <span class="tp">Rc</span>::<span class="fn">weak_count</span>(&amp;branch));  <span class="cm">// 1, 1</span></span></div><div class="code-row"><span class="ln">22</span><span class="line">    <span class="fn">println!</span>(<span class="st">"leaf strong={}, weak={}"</span>, <span class="tp">Rc</span>::<span class="fn">strong_count</span>(&amp;leaf), <span class="tp">Rc</span>::<span class="fn">weak_count</span>(&amp;leaf));        <span class="cm">// 2, 0</span></span></div><div class="code-row"><span class="ln">23</span><span class="line">    <span class="cm">// main 끝: 순환 없음 → branch, leaf 모두 정상 drop</span></span></div><div class="code-row"><span class="ln">24</span><span class="line">}</span></div>
+</div>
+<div class="run-output" id="out_r_s18_weak_fix"></div>
+</div>
+  <div class="note info">
+    <div class="note-title">🖨️ 예상 출력</div>
+    <div class="note-body">
+      leaf parent = None / leaf parent = Some(5) / branch strong=1, weak=1 / leaf strong=2, weak=0 / <strong>Node 5 drop!</strong> / <strong>Node 3 drop!</strong>
+      <br><br>
+      예제 가(순환)와 달리 <code>Node .. drop!</code>이 출력됩니다 = 정상 해제. <code>branch</code>의 <code>weak_count=1</code>은 <code>leaf.parent</code>가 걸어둔 약참조지만, 해제를 막지 않습니다.
+    </div>
+  </div>
+
+  <div class="note ok">
+    <div class="note-title">✅ 한 줄 요약</div>
+    <div class="note-body">
+      <ul>
+        <li><code>Rc</code>끼리 서로 가리키면 <code>strong_count</code>가 0에 못 가 <strong>해제 안 됨 = 누수</strong>(Drop도 안 불림). Rust에서 누수는 safe하지만 버그.</li>
+        <li><code>Rc::downgrade(&amp;rc)</code> → <code>Weak&lt;T&gt;</code>. <code>weak_count</code>만 +1, <strong>해제 조건엔 영향 없음</strong>(strong==0이면 해제).</li>
+        <li>값 쓰려면 <code>weak.upgrade()</code> → <code>Option&lt;Rc&lt;T&gt;&gt;</code>(<code>Some</code>=살아있음 / <code>None</code>=해제됨).</li>
+        <li>패턴: <strong>부모→자식 <code>Rc</code>(소유), 자식→부모 <code>Weak</code>(비소유)</strong> → 순환 없음.</li>
+      </ul>
+    </div>
+  </div>
 
 
 </section>
