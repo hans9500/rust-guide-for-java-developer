@@ -8189,7 +8189,7 @@ help: consider using the `&#x27;static` lifetime
 </div>
 <div class="vp" spellcheck="false" id="r_s7_1">
 <div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> main() {</span></div>
-<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> lit: &amp;<span class="tp">str</span> = <span class="st">&quot;리터럴&quot;</span>;           <span class="cm">// 스택: 프로그램 종료까지</span></span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> lit: &amp;<span class="tp">str</span> = <span class="st">&quot;리터럴&quot;</span>;           <span class="cm">// .rodata(읽기전용): 종료까지</span></span></div>
 <div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> owned: <span class="tp">String</span> = <span class="tp">String</span>::from(<span class="st">&quot;소유&quot;</span>);  <span class="cm">// 힙: 크기 변경 가능</span></span></div>
 <div class="code-row"><span class="ln">4</span><span class="line">    <span class="kw">let</span> slice: &amp;<span class="tp">str</span> = &amp;owned[..];       <span class="cm">// <span class="tp">String</span> → &amp;<span class="tp">str</span> 슬라이스</span></span></div>
 <div class="code-row"><span class="ln">5</span><span class="line">    <span class="fn">println</span>!(<span class="st">&quot;{lit} / {owned} / {slice}&quot;</span>);</span></div>
@@ -8197,6 +8197,34 @@ help: consider using the `&#x27;static` lifetime
 </div>
 <div class="run-output" id="out_r_s7_1"></div>
 </div></div></div>
+
+  <div class="note warn">
+    <div class="note-title">⚠️ 위 2행 주석 정정 — 리터럴 데이터는 '스택'이 아니라 .rodata</div>
+    <div class="note-body">
+      <code>let lit: &amp;str = "리터럴";</code>에서 <strong>스택에 놓이는 것은 <code>lit</code> 변수 자체</strong> — 데이터 시작 주소(<code>ptr</code>)와 길이(<code>len</code>)로 이뤄진 <strong>팻 포인터(16바이트)</strong>뿐입니다.
+      실제 문자 바이트 <code>"리터럴"</code>은 실행파일의 <strong>읽기전용 데이터 영역(.rodata)</strong>에 들어가며 프로그램 종료까지 유지됩니다(<code>'static</code>).
+      원래 주석의 '프로그램 종료까지'는 이 데이터의 <strong>수명</strong>을 가리킨 것으로는 맞지만, <strong>위치는 스택이 아니라 .rodata</strong>입니다.
+      <br><br>
+      반면 3행 <code>String::from("소유")</code>는 <code>"소유"</code>를 <strong>힙에 새로 할당해 복사</strong>합니다. <code>String</code> 구조체(<code>ptr</code>+<code>len</code>+<code>cap</code>, 24바이트)는 스택에, 실제 데이터는 힙에 놓입니다.
+      4행 <code>slice</code>는 <code>owned</code>가 소유한 힙 버퍼를 <strong>빌리므로</strong>, <code>slice.as_ptr()</code>는 <code>owned.as_ptr()</code>와 <strong>같은 힙 주소</strong>를 가리킵니다.
+    </div>
+  </div>
+
+  <div class="note" style="margin:20px 0;padding:0;background:none;border:none;"><svg width="100%" viewBox="0 0 660 244" style="display:block;max-width:680px;background:#1e1e1e;border-radius:6px;border:1px solid #3e3e42;padding:12px;box-sizing:border-box;"><defs><marker id="s71lit" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ce9178" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="s71heap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#4ec9b0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><line x1="220" y1="16" x2="220" y2="206" stroke="#3e3e42" stroke-width="1" stroke-dasharray="6 3"/><line x1="438" y1="16" x2="438" y2="206" stroke="#3e3e42" stroke-width="1" stroke-dasharray="6 3"/><text fill="#d4d4d4" font-family="Consolas,monospace" font-size="13" font-weight="500" x="114" y="30" text-anchor="middle">실행파일 (ELF)</text><text fill="#569cd6" font-family="Consolas,monospace" font-size="13" font-weight="500" x="330" y="30" text-anchor="middle">스택 (Stack)</text><text fill="#4ec9b0" font-family="Consolas,monospace" font-size="13" font-weight="500" x="548" y="30" text-anchor="middle">힙 (Heap)</text><rect x="26" y="48" width="176" height="64" rx="4" fill="#1e1200" stroke="#ce9178" stroke-width="0.8"/><text fill="#ce9178" font-family="Consolas,monospace" font-size="13" font-weight="500" x="114" y="70" text-anchor="middle">.rodata</text><text fill="#9d9d9d" font-family="Consolas,monospace" font-size="12" x="114" y="88" text-anchor="middle">"리터럴" · 9 bytes</text><text fill="#9d9d9d" font-family="Consolas,monospace" font-size="11" x="114" y="104" text-anchor="middle">읽기전용 · 'static</text><rect x="26" y="126" width="176" height="64" rx="4" fill="#0a0a0a" stroke="#808080" stroke-width="0.8"/><text fill="#c9c9c9" font-family="Consolas,monospace" font-size="13" font-weight="500" x="114" y="148" text-anchor="middle">.text (코드)</text><text fill="#9d9d9d" font-family="Consolas,monospace" font-size="12" x="114" y="166" text-anchor="middle">"소유" = 즉시값</text><text fill="#6a9955" font-family="Consolas,monospace" font-size="11" x="114" y="182" text-anchor="middle">(-O 최적화 시)</text><rect x="248" y="48" width="180" height="42" rx="4" fill="#0d2137" stroke="#569cd6" stroke-width="0.8"/><text fill="#569cd6" font-family="Consolas,monospace" font-size="13" font-weight="500" x="338" y="66" text-anchor="middle">lit : &amp;str  (16 B)</text><text fill="#9d9d9d" font-family="Consolas,monospace" font-size="11" x="338" y="82" text-anchor="middle">ptr · len 9</text><rect x="248" y="100" width="180" height="42" rx="4" fill="#0d2137" stroke="#569cd6" stroke-width="0.8"/><text fill="#569cd6" font-family="Consolas,monospace" font-size="13" font-weight="500" x="338" y="118" text-anchor="middle">owned : String (24 B)</text><text fill="#9d9d9d" font-family="Consolas,monospace" font-size="11" x="338" y="134" text-anchor="middle">ptr · len 6 · cap 6</text><rect x="248" y="152" width="180" height="42" rx="4" fill="#0d2137" stroke="#569cd6" stroke-width="0.8"/><text fill="#569cd6" font-family="Consolas,monospace" font-size="13" font-weight="500" x="338" y="170" text-anchor="middle">slice : &amp;str  (16 B)</text><text fill="#9d9d9d" font-family="Consolas,monospace" font-size="11" x="338" y="186" text-anchor="middle">ptr · len 6</text><rect x="460" y="100" width="176" height="94" rx="6" fill="#0d3324" stroke="#4ec9b0" stroke-width="0.8"/><text fill="#4ec9b0" font-family="Consolas,monospace" font-size="13" font-weight="500" x="548" y="128" text-anchor="middle">"소유" 복사본</text><text fill="#9d9d9d" font-family="Consolas,monospace" font-size="12" x="548" y="148" text-anchor="middle">6 bytes</text><text fill="#9d9d9d" font-family="Consolas,monospace" font-size="11" x="548" y="166" text-anchor="middle">런타임 힙 할당</text><text fill="#9d9d9d" font-family="Consolas,monospace" font-size="11" x="548" y="182" text-anchor="middle">slice가 이 버퍼 차용</text><path d="M246 69 Q225 77 205 85" fill="none" stroke="#ce9178" stroke-width="1.5" marker-end="url(#s71lit)"/><path d="M430 121 Q444 123 458 126" fill="none" stroke="#4ec9b0" stroke-width="1.5" marker-end="url(#s71heap)"/><path d="M430 173 Q444 171 458 168" fill="none" stroke="#4ec9b0" stroke-width="1.5" marker-end="url(#s71heap)"/><text fill="#6a9955" font-family="Consolas,monospace" font-size="11" x="330" y="224" text-anchor="middle">리터럴 → .rodata('static) · String → 힙 복사 · slice는 힙 버퍼 차용 (실측 rustc 1.75.0)</text></svg></div>
+
+  <div class="note info">
+    <div class="note-title">🔬 심화 — 최적화 시 "소유"는 .rodata가 아니라 코드에 박힌다 (rustc 1.75.0 · x86-64 · -O)</div>
+    <div class="note-body">
+      <code>"소유"</code> 리터럴은 <code>String::from</code>의 <strong>복사 소스로만</strong> 쓰이고 그 주소가 밖으로 노출되지 않습니다. 그래서 컴파일러는 이 6바이트를 <code>.rodata</code> 문자열로 둘 의무가 없습니다.
+      실제로 <code>-O</code>로 컴파일한 바이너리를 디스어셈블하면 <code>"소유"</code>는 <strong>.rodata에서 사라지고</strong>(바이트 검색 0건), 힙 버퍼를 채우는 <strong>명령어의 즉시값</strong>으로 들어갑니다:
+      <pre style="margin:8px 0;padding:10px;background:var(--bg2);border-radius:4px;font-size:12px;line-height:1.6"><code>movl  $0xec8c86ec, (%rax)     # 힙버퍼[0..4] ← ec 86 8c ec
+movw  $0xa09c,     0x4(%rax)  # 힙버퍼[4..6] ← 9c a0</code></pre>
+      리틀엔디언으로 풀면 <code>ec 86 8c ec 9c a0</code> = <code>"소유"</code>(UTF-8)입니다. 즉 최적화하면 문자열이 <strong>데이터(.rodata)가 아니라 코드(.text)의 피연산자</strong>로 컴파일됩니다.
+      반대로 <code>lit</code>(<code>&amp;str</code>)은 <strong>안정된 주소가 필요</strong>해 이 최적화를 받지 못하고 <code>.rodata</code>에 그대로 남습니다.
+      <br><br>
+      <strong>주의</strong>: 이 즉시값 동작은 컴파일러 버전·최적화 레벨·타깃에 따라 달라질 수 있는 구현 세부사항입니다. 여기 값은 rustc 1.75.0, <code>-O</code>, x86-64에서 실측한 것입니다.
+    </div>
+  </div>
 
   <div class="ex-label concept">예제 7-2: String 생성 방법들</div>
   <div class="single"><div class="eb">
