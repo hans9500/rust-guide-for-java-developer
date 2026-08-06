@@ -10566,6 +10566,75 @@ This is key to understanding why it returns ().</code></pre>
 <div class="code-row"><span class="ln">18</span><span class="line">}</span></div>
 </div><div class="run-output" id="out_r_s11_8"></div></div>
 
+  <div class="note warn">
+    <div class="note-title">⚠️ 위 예제는 의도적으로 컴파일 실패 — 실행 가능한 정정판은 아래</div>
+    <div class="note-body">
+      위 코드를 실행하면 <code>E0382: use of moved value</code>가 3건 발생합니다. <code>Result&lt;i32, String&gt;</code>은 <code>Copy</code>가 아니라, <code>self</code>를 소비하는 메서드(<code>.ok()</code>, <code>.unwrap_or_else()</code>)를 호출한 뒤 같은 값을 다시 사용하기 때문입니다. 원인과 정정판을 아래에 이어서 정리합니다.
+    </div>
+  </div>
+
+  <div class="note info">
+    <div class="note-title">💡 왜 실패하나 — 소비(self) vs 빌림(&amp;self)</div>
+    <div class="note-body">
+      Result 메서드는 <code>self</code>를 어떻게 받느냐로 갈립니다:
+      <ul>
+        <li><code>.is_ok()</code> / <code>.is_err()</code> / <code>.as_ref()</code> → <strong>&amp;self (빌림)</strong> — 원본 그대로 유지</li>
+        <li><code>.ok()</code> / <code>.err()</code> / <code>.unwrap_or_else()</code> / <code>.map()</code> / <code>.map_err()</code> → <strong>self (소비)</strong> — Result를 이동시킴</li>
+      </ul>
+      <code>Result&lt;i32, String&gt;</code>은 <code>String</code>이 <code>Copy</code>가 아니라 <strong>이동 규칙</strong>을 따릅니다. 그래서 소비 메서드를 한 번 부르면 그 값은 끝 — 이후 재사용은 <code>E0382</code>입니다. 아래 두 정정판은 같은 동작을 유지하되, <strong>(A)</strong> 에러 타입을 <code>Copy</code>인 <code>&amp;str</code>로 바꾸거나, <strong>(B)</strong> <code>String</code>을 유지하되 <code>clone</code>과 호출 순서로 해결합니다.
+      <br><br>
+      <strong>참고</strong>: 컴파일러는 <code>.as_ref()</code>를 권하지만, 이 가이드에서 <code>as_ref</code>는 19장에서 처음 소개되므로 여기서는 쓰지 않습니다.
+    </div>
+  </div>
+
+  <div class="ex-label concept">예제 11-6b (정정 A): 에러 타입을 Copy인 &amp;str로</div><div class="eb"><div class="et"><span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s11_8f1')">복사</button>
+<button class="run-btn" onclick="runCode('r_s11_8f1','rust')">&#9655; 실행</button>
+</div><div class="vp" spellcheck="false" id="r_s11_8f1">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> ok: <span class="tp">Result</span><<span class="tp">i32</span>, &amp;<span class="tp">str</span>> = <span class="tp">Ok</span>(<span class="nu">42</span>);</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> err: <span class="tp">Result</span><<span class="tp">i32</span>, &amp;<span class="tp">str</span>> = <span class="tp">Err</span>(<span class="st">"실패"</span>);</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    <span class="cm">// ok() &#8594; Option 변환 (에러 버림) &#8212; Copy라 원본 유지</span></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{:?}"</span>, ok.<span class="fn">ok</span>());   <span class="cm">// Some(42)</span></span></div>
+<div class="code-row"><span class="ln">7</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{:?}"</span>, err.<span class="fn">ok</span>());  <span class="cm">// None</span></span></div>
+<div class="code-row"><span class="ln">8</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="cm">// unwrap_or_else: Err이면 클로저 실행</span></span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="kw">let</span> val = err.<span class="fn">unwrap_or_else</span>(|e| {</span></div>
+<div class="code-row"><span class="ln">11</span><span class="line">        <span class="fn">println!</span>(<span class="st">"에러 발생: {}"</span>, e);</span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">        <span class="nu">-1</span></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">    });</span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">    <span class="fn">println!</span>(<span class="st">"결과: {}"</span>, val);</span></div>
+<div class="code-row"><span class="ln">15</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">16</span><span class="line">    <span class="cm">// is_ok / is_err</span></span></div>
+<div class="code-row"><span class="ln">17</span><span class="line">    <span class="fn">println!</span>(<span class="st">"ok.is_ok={}, err.is_err={}"</span>, ok.<span class="fn">is_ok</span>(), err.<span class="fn">is_err</span>());</span></div>
+<div class="code-row"><span class="ln">18</span><span class="line">}</span></div>
+</div><div class="run-output" id="out_r_s11_8f1"></div></div>
+
+  <div class="ex-label concept">예제 11-6c (정정 B): String 유지 + clone + 호출 순서</div><div class="eb"><div class="et"><span class="el"><svg class="lang-icon-svg" width="16" height="16" aria-hidden="true"><use href="#icon-rust"/></svg><span class="lang-name">Rust</span></span>
+<button class="ec" onclick="cp('r_s11_8f2')">복사</button>
+<button class="run-btn" onclick="runCode('r_s11_8f2','rust')">&#9655; 실행</button>
+</div><div class="vp" spellcheck="false" id="r_s11_8f2">
+<div class="code-row"><span class="ln">1</span><span class="line"><span class="kw">fn</span> <span class="fn">main</span>() {</span></div>
+<div class="code-row"><span class="ln">2</span><span class="line">    <span class="kw">let</span> ok: <span class="tp">Result</span><<span class="tp">i32</span>, <span class="tp">String</span>> = <span class="tp">Ok</span>(<span class="nu">42</span>);</span></div>
+<div class="code-row"><span class="ln">3</span><span class="line">    <span class="kw">let</span> err: <span class="tp">Result</span><<span class="tp">i32</span>, <span class="tp">String</span>> = <span class="tp">Err</span>(<span class="tp">String</span>::<span class="fn">from</span>(<span class="st">"실패"</span>));</span></div>
+<div class="code-row"><span class="ln">4</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">5</span><span class="line">    <span class="cm">// is_ok / is_err: &amp;self만 빌림 (소비 안 함) &#8212; 먼저 호출</span></span></div>
+<div class="code-row"><span class="ln">6</span><span class="line">    <span class="fn">println!</span>(<span class="st">"ok.is_ok={}, err.is_err={}"</span>, ok.<span class="fn">is_ok</span>(), err.<span class="fn">is_err</span>());</span></div>
+<div class="code-row"><span class="ln">7</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">8</span><span class="line">    <span class="cm">// ok(): Result &#8594; Option (self 소비)</span></span></div>
+<div class="code-row"><span class="ln">9</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{:?}"</span>, ok.<span class="fn">ok</span>());           <span class="cm">// Some(42)</span></span></div>
+<div class="code-row"><span class="ln">10</span><span class="line">    <span class="fn">println!</span>(<span class="st">"{:?}"</span>, err.<span class="fn">clone</span>().<span class="fn">ok</span>());  <span class="cm">// None (clone 소비, 원본 유지)</span></span></div>
+<div class="code-row"><span class="ln">11</span><span class="line"></span></div>
+<div class="code-row"><span class="ln">12</span><span class="line">    <span class="cm">// unwrap_or_else: err 원본 소비 (마지막 사용)</span></span></div>
+<div class="code-row"><span class="ln">13</span><span class="line">    <span class="kw">let</span> val = err.<span class="fn">unwrap_or_else</span>(|e| {</span></div>
+<div class="code-row"><span class="ln">14</span><span class="line">        <span class="fn">println!</span>(<span class="st">"에러 발생: {}"</span>, e);</span></div>
+<div class="code-row"><span class="ln">15</span><span class="line">        <span class="nu">-1</span></span></div>
+<div class="code-row"><span class="ln">16</span><span class="line">    });</span></div>
+<div class="code-row"><span class="ln">17</span><span class="line">    <span class="fn">println!</span>(<span class="st">"결과: {}"</span>, val);</span></div>
+<div class="code-row"><span class="ln">18</span><span class="line">}</span></div>
+</div><div class="run-output" id="out_r_s11_8f2"></div></div>
+
   <div class="part-h" id="s11-part4">Part 4. 값/에러 변환</div>
   <div class="ex-label concept">예제 11-7: map / map_err</div>
   <div class="single"><div class="eb">
